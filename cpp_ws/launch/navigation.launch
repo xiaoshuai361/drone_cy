@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<launch>
+    <!--
+        OctoMap航线巡检 (C++版)
+        加载OctoMap → 2D分层A*规划 → 自动巡检
+    -->
+
+    <arg name="map_file" default="$(env HOME)/catkin_ws/maps/greenhouse_map.bt"/>
+
+    <!-- OctoMap Server (加载模式) -->
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"
+          args="$(arg map_file)">
+        <param name="resolution" value="0.15"/>
+        <param name="frame_id" value="camera_init"/>
+        <param name="sensor_model/max_range" value="30.0"/>
+        <param name="sensor_model/hit" value="0.85"/>
+        <param name="sensor_model/miss" value="0.35"/>
+        <param name="sensor_model/min" value="0.12"/>
+        <param name="sensor_model/max" value="0.97"/>
+        <param name="latch" value="true"/>
+        <param name="filter_ground" value="false"/>
+        <remap from="cloud_in" to="/cloud_in_disabled"/>
+    </node>
+
+    <!-- 静态TF -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_camera_init"
+          args="0 0 0 0 0 0 map camera_init"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="odom_to_map"
+          args="0 0 0 0 0 0 odom map"/>
+
+    <!-- 2D分层巡检规划器 (C++) -->
+    <node pkg="mak4_sim_cpp" type="patrol_planner_node" name="patrol_planner" output="screen"
+          launch-prefix="bash -c 'sleep 2; exec $0 $@' --">
+        <param name="safety_margin" value="0.4"/>
+        <param name="waypoint_threshold" value="0.5"/>
+        <param name="default_altitude" value="1.5"/>
+        <param name="flight_speed" value="6.9"/>
+    </node>
+
+    <!-- RViz -->
+    <node pkg="rviz" type="rviz" name="rviz_nav"
+          args="-d $(find mak4_sim_cpp)/config/navigation.rviz" output="screen"/>
+</launch>

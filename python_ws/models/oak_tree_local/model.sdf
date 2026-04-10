@@ -1,0 +1,43 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="oak_tree_local">
+    <static>true</static>
+    <link name="trunk">
+      <!-- 树干 -->
+      <collision name="trunk_collision">
+        <pose>0 0 2.5 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.2</radius><length>5.0</length></cylinder>
+        </geometry>
+      </collision>
+      <visual name="trunk_visual">
+        <pose>0 0 2.5 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.2</radius><length>5.0</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.35 0.22 0.08 1</ambient>
+          <diffuse>0.45 0.3 0.12 1</diffuse>
+        </material>
+      </visual>
+      <!-- 树冠(球体) -->
+      <collision name="canopy_collision">
+        <pose>0 0 5.5 0 0 0</pose>
+        <geometry>
+          <sphere><radius>2.5</radius></sphere>
+        </geometry>
+      </collision>
+      <visual name="canopy_visual">
+        <pose>0 0 5.5 0 0 0</pose>
+        <geometry>
+          <sphere><radius>2.5</radius></sphere>
+        </geometry>
+        <material>
+          <ambient>0.08 0.32 0.05 0.35</ambient>
+          <diffuse>0.12 0.45 0.08 0.35</diffuse>
+        </material>
+        <transparency>0.6</transparency>
+      </visual>
+    </link>
+  </model>
+</sdf>

@@ -1,0 +1,203 @@
+<?xml version="1.0" ?>
+<!--
+  黄瓜大棚模型 (Cucumber Greenhouse)
+  尺寸: 长20m x 宽8m x 高4m (拱形顶)
+  包含: 棚架结构、横梁、模拟藤蔓线
+  所有部件都有碰撞体积用于避障测试
+-->
+<sdf version="1.6">
+  <model name="greenhouse">
+    <static>true</static>
+
+    <!-- ============================================ -->
+    <!--           地基/地面                           -->
+    <!-- ============================================ -->
+    <link name="floor">
+      <pose>0 0 0.01 0 0 0</pose>
+      <collision name="floor_col">
+        <geometry><box><size>20 8 0.02</size></box></geometry>
+      </collision>
+      <visual name="floor_vis">
+        <geometry><box><size>20 8 0.02</size></box></geometry>
+        <material>
+          <ambient>0.35 0.25 0.15 1</ambient>
+          <diffuse>0.45 0.32 0.2 1</diffuse>
+        </material>
+      </visual>
+    </link>
+
+    <!-- ============================================ -->
+    <!--      左侧墙壁 (半透明薄膜墙, y=-4)           -->
+    <!-- ============================================ -->
+    <link name="wall_left">
+      <pose>0 -4 1.5 0 0 0</pose>
+      <collision name="col"><geometry><box><size>20 0.05 3.0</size></box></geometry></collision>
+      <visual name="vis">
+        <geometry><box><size>20 0.05 3.0</size></box></geometry>
+        <material>
+          <ambient>0.8 0.85 0.8 0.3</ambient>
+          <diffuse>0.9 0.95 0.9 0.3</diffuse>
+        </material>
+        <transparency>0.6</transparency>
+      </visual>
+    </link>
+
+    <!-- 右侧墙壁 (y=4) -->
+    <link name="wall_right">
+      <pose>0 4 1.5 0 0 0</pose>
+      <collision name="col"><geometry><box><size>20 0.05 3.0</size></box></geometry></collision>
+      <visual name="vis">
+        <geometry><box><size>20 0.05 3.0</size></box></geometry>
+        <material>
+          <ambient>0.8 0.85 0.8 0.3</ambient>
+          <diffuse>0.9 0.95 0.9 0.3</diffuse>
+        </material>
+        <transparency>0.6</transparency>
+      </visual>
+    </link>
+
+    <!-- 前端墙壁 (x=-10, 留门洞 2m宽) -->
+    <link name="wall_front_l">
+      <pose>-10 -2.5 1.5 0 0 0</pose>
+      <collision name="col"><geometry><box><size>0.05 3.0 3.0</size></box></geometry></collision>
+      <visual name="vis">
+        <geometry><box><size>0.05 3.0 3.0</size></box></geometry>
+        <material><ambient>0.8 0.85 0.8 0.3</ambient><diffuse>0.9 0.95 0.9 0.3</diffuse></material>
+        <transparency>0.6</transparency>
+      </visual>
+    </link>
+    <link name="wall_front_r">
+      <pose>-10 2.5 1.5 0 0 0</pose>
+      <collision name="col"><geometry><box><size>0.05 3.0 3.0</size></box></geometry></collision>
+      <visual name="vis">
+        <geometry><box><size>0.05 3.0 3.0</size></box></geometry>
+        <material><ambient>0.8 0.85 0.8 0.3</ambient><diffuse>0.9 0.95 0.9 0.3</diffuse></material>
+        <transparency>0.6</transparency>
+      </visual>
+    </link>
+
+    <!-- 后端墙壁 (x=10) -->
+    <link name="wall_back">
+      <pose>10 0 1.5 0 0 0</pose>
+      <collision name="col"><geometry><box><size>0.05 8.0 3.0</size></box></geometry></collision>
+      <visual name="vis">
+        <geometry><box><size>0.05 8.0 3.0</size></box></geometry>
+        <material><ambient>0.8 0.85 0.8 0.3</ambient><diffuse>0.9 0.95 0.9 0.3</diffuse></material>
+        <transparency>0.6</transparency>
+      </visual>
+    </link>
+
+    <!-- ============================================ -->
+    <!--      拱形屋顶骨架 (每隔2m一根拱梁)            -->
+    <!-- ============================================ -->
+    <!-- 使用横放的长条近似拱顶：左坡 + 右坡 -->
+
+    <!-- x=-10 处拱梁 -->
+    <link name="arch_m10_l"><pose>-10 -2 3.5 0 0.35 0</pose>
+      <collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision>
+      <visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual>
+    </link>
+    <link name="arch_m10_r"><pose>-10 2 3.5 0 -0.35 0</pose>
+      <collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision>
+      <visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual>
+    </link>
+
+    <!-- x=-8 处拱梁 -->
+    <link name="arch_m8_l"><pose>-8 -2 3.5 0 0.35 0</pose>
+      <collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision>
+      <visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual>
+    </link>
+    <link name="arch_m8_r"><pose>-8 2 3.5 0 -0.35 0</pose>
+      <collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision>
+      <visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual>
+    </link>
+
+    <!-- x=-6 -->
+    <link name="arch_m6_l"><pose>-6 -2 3.5 0 0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+    <link name="arch_m6_r"><pose>-6 2 3.5 0 -0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+
+    <!-- x=-4 -->
+    <link name="arch_m4_l"><pose>-4 -2 3.5 0 0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+    <link name="arch_m4_r"><pose>-4 2 3.5 0 -0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+
+    <!-- x=-2 -->
+    <link name="arch_m2_l"><pose>-2 -2 3.5 0 0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+    <link name="arch_m2_r"><pose>-2 2 3.5 0 -0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+
+    <!-- x=0 -->
+    <link name="arch_0_l"><pose>0 -2 3.5 0 0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+    <link name="arch_0_r"><pose>0 2 3.5 0 -0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+
+    <!-- x=2 -->
+    <link name="arch_2_l"><pose>2 -2 3.5 0 0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+    <link name="arch_2_r"><pose>2 2 3.5 0 -0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+
+    <!-- x=4 -->
+    <link name="arch_4_l"><pose>4 -2 3.5 0 0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+    <link name="arch_4_r"><pose>4 2 3.5 0 -0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+
+    <!-- x=6 -->
+    <link name="arch_6_l"><pose>6 -2 3.5 0 0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+    <link name="arch_6_r"><pose>6 2 3.5 0 -0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+
+    <!-- x=8 -->
+    <link name="arch_8_l"><pose>8 -2 3.5 0 0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+    <link name="arch_8_r"><pose>8 2 3.5 0 -0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+
+    <!-- x=10 -->
+    <link name="arch_10_l"><pose>10 -2 3.5 0 0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+    <link name="arch_10_r"><pose>10 2 3.5 0 -0.35 0</pose><collision name="c"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.03</radius><length>4.5</length></cylinder></geometry><material><ambient>0.6 0.6 0.6 1</ambient><diffuse>0.7 0.7 0.7 1</diffuse></material></visual></link>
+
+    <!-- ============================================ -->
+    <!--      纵向横梁 (脊梁 + 两侧檩条)              -->
+    <!-- ============================================ -->
+    <!-- 脊梁 (顶部中央, y=0, z=4.2) -->
+    <link name="ridge_beam">
+      <pose>0 0 4.2 0 0 0</pose>
+      <collision name="c"><geometry><box><size>20 0.04 0.04</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>20 0.04 0.04</size></box></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual>
+    </link>
+
+    <!-- 左侧檩条 -->
+    <link name="purlin_l"><pose>0 -2.5 3.2 0 0 0</pose>
+      <collision name="c"><geometry><box><size>20 0.04 0.04</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>20 0.04 0.04</size></box></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual>
+    </link>
+    <!-- 右侧檩条 -->
+    <link name="purlin_r"><pose>0 2.5 3.2 0 0 0</pose>
+      <collision name="c"><geometry><box><size>20 0.04 0.04</size></box></geometry></collision>
+      <visual name="v"><geometry><box><size>20 0.04 0.04</size></box></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual>
+    </link>
+
+    <!-- ============================================ -->
+    <!--      竖直支撑柱 (每隔4m一根, 左右各一)        -->
+    <!-- ============================================ -->
+    <link name="pillar_m8_l"><pose>-8 -3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+    <link name="pillar_m8_r"><pose>-8 3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+    <link name="pillar_m4_l"><pose>-4 -3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+    <link name="pillar_m4_r"><pose>-4 3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+    <link name="pillar_0_l"><pose>0 -3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+    <link name="pillar_0_r"><pose>0 3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+    <link name="pillar_4_l"><pose>4 -3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+    <link name="pillar_4_r"><pose>4 3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+    <link name="pillar_8_l"><pose>8 -3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+    <link name="pillar_8_r"><pose>8 3.9 1.5 0 0 0</pose><collision name="c"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.04</radius><length>3.0</length></cylinder></geometry><material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.65 0.65 0.65 1</diffuse></material></visual></link>
+
+    <!-- ============================================ -->
+    <!--     藤蔓牵引线 (模拟下垂的横向遮挡)           -->
+    <!--     这些是关键避障障碍物                       -->
+    <!-- ============================================ -->
+    <!-- 高度约2m处的横向牵引钢丝 -->
+    <link name="wire_1"><pose>-7 0 2.0 0 0 0</pose><collision name="c"><geometry><box><size>0.02 6.0 0.02</size></box></geometry></collision><visual name="v"><geometry><box><size>0.02 6.0 0.02</size></box></geometry><material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material></visual></link>
+    <link name="wire_2"><pose>-3 0 2.0 0 0 0</pose><collision name="c"><geometry><box><size>0.02 6.0 0.02</size></box></geometry></collision><visual name="v"><geometry><box><size>0.02 6.0 0.02</size></box></geometry><material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material></visual></link>
+    <link name="wire_3"><pose>1 0 2.0 0 0 0</pose><collision name="c"><geometry><box><size>0.02 6.0 0.02</size></box></geometry></collision><visual name="v"><geometry><box><size>0.02 6.0 0.02</size></box></geometry><material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material></visual></link>
+    <link name="wire_4"><pose>5 0 2.0 0 0 0</pose><collision name="c"><geometry><box><size>0.02 6.0 0.02</size></box></geometry></collision><visual name="v"><geometry><box><size>0.02 6.0 0.02</size></box></geometry><material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material></visual></link>
+    <link name="wire_5"><pose>9 0 2.0 0 0 0</pose><collision name="c"><geometry><box><size>0.02 6.0 0.02</size></box></geometry></collision><visual name="v"><geometry><box><size>0.02 6.0 0.02</size></box></geometry><material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material></visual></link>
+
+    <!-- 更高处(2.5m)的额外牵引线 -->
+    <link name="wire_h1"><pose>-5 0 2.5 0 0 0</pose><collision name="c"><geometry><box><size>0.02 6.0 0.02</size></box></geometry></collision><visual name="v"><geometry><box><size>0.02 6.0 0.02</size></box></geometry><material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material></visual></link>
+    <link name="wire_h2"><pose>3 0 2.5 0 0 0</pose><collision name="c"><geometry><box><size>0.02 6.0 0.02</size></box></geometry></collision><visual name="v"><geometry><box><size>0.02 6.0 0.02</size></box></geometry><material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material></visual></link>
+    <link name="wire_h3"><pose>7 0 2.5 0 0 0</pose><collision name="c"><geometry><box><size>0.02 6.0 0.02</size></box></geometry></collision><visual name="v"><geometry><box><size>0.02 6.0 0.02</size></box></geometry><material><ambient>0.3 0.3 0.3 1</ambient><diffuse>0.4 0.4 0.4 1</diffuse></material></visual></link>
+
+  </model>
+</sdf>

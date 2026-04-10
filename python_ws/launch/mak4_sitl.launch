@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<launch>
+    <!--
+        MAK4 7寸四旋翼无人机 PX4 SITL 仿真
+        集成：PX4 SITL + Gazebo + MAVROS
+        基于 iris 四旋翼模型（与 MAK4 参数相近的 250mm 级四旋翼）
+    -->
+
+    <!-- 无人机初始位置 -->
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="0"/>
+
+    <!-- 仿真参数 -->
+    <arg name="vehicle" default="iris"/>
+    <arg name="gui" default="true"/>
+    <arg name="world" default="$(find mavlink_sitl_gazebo)/worlds/empty.world"/>
+    <arg name="sdf" default="$(find mavlink_sitl_gazebo)/models/$(arg vehicle)/$(arg vehicle).sdf"/>
+    <arg name="est" default="ekf2"/>
+    <arg name="interactive" default="true"/>
+
+    <!-- MAVROS 参数 -->
+    <arg name="fcu_url" default="udp://:14540@localhost:14557"/>
+
+    <!-- 1. 启动 PX4 SITL + Gazebo -->
+    <include file="$(find px4)/launch/posix_sitl.launch">
+        <arg name="x" value="$(arg x)"/>
+        <arg name="y" value="$(arg y)"/>
+        <arg name="z" value="$(arg z)"/>
+        <arg name="R" value="0"/>
+        <arg name="P" value="0"/>
+        <arg name="Y" value="0"/>
+        <arg name="world" value="$(arg world)"/>
+        <arg name="vehicle" value="$(arg vehicle)"/>
+        <arg name="sdf" value="$(arg sdf)"/>
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="interactive" value="$(arg interactive)"/>
+        <arg name="debug" value="false"/>
+        <arg name="verbose" value="false"/>
+        <arg name="paused" value="false"/>
+        <arg name="respawn_gazebo" value="false"/>
+    </include>
+
+    <!-- 2. 启动 MAVROS（PX4 与 ROS 的通信桥梁）-->
+    <include file="$(find mavros)/launch/px4.launch">
+        <arg name="gcs_url" value=""/>
+        <arg name="fcu_url" value="$(arg fcu_url)"/>
+        <arg name="respawn_mavros" value="false"/>
+    </include>
+</launch>

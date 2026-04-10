@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<launch>
+    <!--
+        MAK4 大棚场景仿真
+        PX4 SITL + Gazebo(大棚) + MAVROS
+        GPS拒止环境 - 用于 Fast-LIO2 SLAM + 路径规划
+    -->
+
+    <!-- 添加本地模型路径 -->
+    <env name="GAZEBO_MODEL_PATH" value="$(find mak4_sim)/models:$(optenv GAZEBO_MODEL_PATH)"/>
+
+    <!-- 无人机初始位置（大棚门口内侧） -->
+    <arg name="x" default="-8"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="0"/>
+
+    <!-- 仿真参数 -->
+    <arg name="vehicle" default="iris"/>
+    <arg name="gui" default="true"/>
+    <arg name="world" default="$(find mak4_sim)/worlds/greenhouse.world"/>
+    <arg name="sdf" default="$(find mak4_sim)/models/iris_rgbd_lidar/iris_rgbd_lidar.sdf"/>
+    <arg name="interactive" default="true"/>
+
+    <!-- MAVROS 参数 -->
+    <arg name="fcu_url" default="udp://:14540@localhost:14557"/>
+
+    <!-- 1. PX4 SITL + Gazebo -->
+    <include file="$(find px4)/launch/posix_sitl.launch">
+        <arg name="x" value="$(arg x)"/>
+        <arg name="y" value="$(arg y)"/>
+        <arg name="z" value="$(arg z)"/>
+        <arg name="R" value="0"/>
+        <arg name="P" value="0"/>
+        <arg name="Y" value="0"/>
+        <arg name="world" value="$(arg world)"/>
+        <arg name="vehicle" value="$(arg vehicle)"/>
+        <arg name="sdf" value="$(arg sdf)"/>
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="interactive" value="$(arg interactive)"/>
+        <arg name="debug" value="false"/>
+        <arg name="verbose" value="false"/>
+        <arg name="paused" value="false"/>
+        <arg name="respawn_gazebo" value="false"/>
+    </include>
+
+    <!-- 2. MAVROS (延迟启动, 等待PX4参数系统完全初始化) -->
+    <node pkg="mavros" type="mavros_node" name="mavros" required="true" clear_params="true"
+          output="screen" launch-prefix="bash -c 'sleep 8; exec $0 $@' --">
+        <param name="fcu_url" value="$(arg fcu_url)"/>
+        <param name="gcs_url" value=""/>
+        <param name="target_system_id" value="1"/>
+        <param name="target_component_id" value="1"/>
+        <param name="fcu_protocol" value="v2.0"/>
+        <rosparam command="load" file="$(find mavros)/launch/px4_pluginlists.yaml"/>
+        <rosparam command="load" file="$(find mavros)/launch/px4_config.yaml"/>
+    </node>
+
+    <!-- 3. 配置 EKF2: 启用测距仪(定高) + 光流(定位) -->
+    <node pkg="mak4_sim" type="configure_ekf2.py" name="configure_ekf2" output="screen"
+          launch-prefix="bash -c 'sleep 12; exec $0 $@' --"/>
+
+    <!-- 4. 相机TF: body → camera_link (前方12cm, 与SDF模型匹配) -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="body_to_camera_link"
+          args="0.12 0 0 0 0 0 body camera_link"/>
+</launch>

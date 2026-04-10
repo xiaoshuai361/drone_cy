@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<launch>
+    <!--
+        2D栅格地图航线巡检启动文件 (第十七次新增)
+        
+        核心方案: FAST-LIO2 PCD → Z轴切片 → 2D栅格 → A*导航
+        
+        工作流程:
+        1. 先用 slam_mapping.launch 建图, save_map.py 保存PCD
+        2. 运行 pcd_to_2d_map.py 生成2D栅格地图
+        3. roslaunch mak4_sim navigation_2d.launch
+        4. 在RViz点击航点, 终端输入 'start'
+        
+        前提:
+        - 已运行 mak4_greenhouse.launch (PX4 SITL + MAVROS)
+        - 已有2D栅格文件 (通过 pcd_to_2d_map.py 生成)
+        
+        用法:
+        roslaunch mak4_sim navigation_2d.launch
+        roslaunch mak4_sim navigation_2d.launch map_yaml:=/path/to/map.yaml altitude:=1.5
+    -->
+
+    <!-- 参数 -->
+    <arg name="map_yaml" default="$(env HOME)/catkin_ws/maps/greenhouse_2d.yaml"/>
+    <arg name="altitude" default="1.0"/>
+    <arg name="speed" default="6.9"/>
+
+    <!-- ========== 静态TF ========== -->
+    <!-- map -> camera_init (让RViz正常显示) -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_camera_init"
+          args="0 0 0 0 0 0 map camera_init"/>
+    <!-- odom -> map (MAVROS发布odom->base_link, 需要桥接到map系) -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="odom_to_map"
+          args="0 0 0 0 0 0 odom map"/>
+
+    <!-- ========== 2D栅格地图巡检规划器 ========== -->
+    <node pkg="mak4_sim" type="grid_map_planner.py" name="grid_map_planner" output="screen"
+          launch-prefix="bash -c 'sleep 2; exec $0 $@' --">
+        <param name="map_yaml" value="$(arg map_yaml)"/>
+        <param name="default_altitude" value="$(arg altitude)"/>
+        <param name="flight_speed" value="$(arg speed)"/>
+        <param name="safety_margin" value="0.3"/>
+        <param name="waypoint_threshold" value="0.5"/>
+    </node>
+
+    <!-- ========== RViz 可视化 ========== -->
+    <node pkg="rviz" type="rviz" name="rviz_nav2d"
+          args="-d $(find mak4_sim)/config/navigation_2d.rviz" output="screen"/>
+</launch>

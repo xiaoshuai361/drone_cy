@@ -1,0 +1,39 @@
+# Fast-LIO2 配置 - Gazebo仿真 Mid360 (PointCloud2 输出)
+# 注意: Gazebo velodyne插件输出标准 PointCloud2,
+#       因此 lidar_type 使用 2 (Velodyne格式) 而非 1 (Livox格式)
+
+common:
+    lid_topic:  "/mid360/points"
+    imu_topic:  "/mavros/imu/data"
+    time_sync_en: false
+    time_offset_lidar_to_imu: 0.0
+
+preprocess:
+    lidar_type: 2                # 2 for Velodyne/standard PointCloud2
+    scan_line: 32                # 垂直线数 (与SDF中vertical samples一致)
+    scan_rate: 10                # 扫描频率 Hz
+    blind: 0.5
+
+mapping:
+    acc_cov: 0.1
+    gyr_cov: 0.1
+    b_acc_cov: 0.0001
+    b_gyr_cov: 0.0001
+    fov_degree: 360
+    det_range: 40.0
+    extrinsic_est_en: false
+    # LiDAR -> IMU 外参 (lidar在base_link上方0.08m)
+    extrinsic_T: [ 0.0, 0.0, 0.08 ]
+    extrinsic_R: [ 1, 0, 0,
+                   0, 1, 0,
+                   0, 0, 1 ]
+
+publish:
+    path_en: true
+    scan_publish_en: true
+    dense_publish_en: true
+    scan_bodyframe_pub_en: true
+
+pcd_save:
+    pcd_save_en: true
+    interval: -1

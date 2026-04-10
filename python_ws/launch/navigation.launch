@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<launch>
+    <!--
+        航线巡检启动文件
+        
+        工作流程:
+        1. 加载已保存的 OctoMap 地图 (.bt文件)
+        2. 启动 RViz (用 Publish Point 点击多个航点设定巡检航线)
+        3. 终端输入 'start' 开始执行巡检 (RRT*避障)
+        4. 启动静态TF
+        
+        前提: 
+        - 已运行 mak4_greenhouse.launch (PX4 SITL + MAVROS)
+        - 已有保存的地图文件 (通过 save_map.py 获得)
+        
+        用法:
+        roslaunch mak4_sim navigation.launch
+        roslaunch mak4_sim navigation.launch map_file:=/path/to/your/map.bt
+    -->
+
+    <!-- 地图文件路径 -->
+    <arg name="map_file" default="$(env HOME)/catkin_ws/maps/greenhouse_map.bt"/>
+
+    <!-- ========== OctoMap Server (加载模式) ========== -->
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"
+          args="$(arg map_file)">
+        <param name="resolution" value="0.15"/>
+        <param name="frame_id" value="camera_init"/>
+        <param name="sensor_model/max_range" value="30.0"/>
+        <param name="sensor_model/hit" value="0.85"/>
+        <param name="sensor_model/miss" value="0.35"/>
+        <param name="sensor_model/min" value="0.12"/>
+        <param name="sensor_model/max" value="0.97"/>
+        <param name="latch" value="true"/>
+        <param name="filter_ground" value="false"/>
+        <!-- 禁用cloud_in，防止覆盖已加载的地图 -->
+        <remap from="cloud_in" to="/cloud_in_disabled"/>
+    </node>
+
+    <!-- ========== 静态TF: map -> camera_init ========== -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_camera_init"
+          args="0 0 0 0 0 0 map camera_init"/>
+
+    <!-- ========== 静态TF: odom -> map ========== -->
+    <!-- MAVROS 使用 odom 坐标系, Fast-LIO2 使用 camera_init; 连接两棵TF树 -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="odom_to_map"
+          args="0 0 0 0 0 0 odom map"/>
+
+    <!-- ========== 2D分层航线巡检规划器 ========== -->
+    <node pkg="mak4_sim" type="patrol_planner.py" name="patrol_planner" output="screen"
+          launch-prefix="bash -c 'sleep 2; exec $0 $@' --">
+        <param name="safety_margin" value="0.4"/>
+        <param name="waypoint_threshold" value="0.5"/>
+        <param name="default_altitude" value="1.5"/>
+        <param name="flight_speed" value="6.9"/>
+    </node>
+
+    <!-- ========== RViz 可视化 ========== -->
+    <node pkg="rviz" type="rviz" name="rviz_nav"
+          args="-d $(find mak4_sim)/config/navigation.rviz" output="screen"/>
+</launch>

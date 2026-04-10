@@ -1,0 +1,65 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <model name="pine_tree_local">
+    <static>true</static>
+    <link name="trunk">
+      <!-- 松树干（更细更高） -->
+      <collision name="trunk_collision">
+        <pose>0 0 3.0 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.15</radius><length>6.0</length></cylinder>
+        </geometry>
+      </collision>
+      <visual name="trunk_visual">
+        <pose>0 0 3.0 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.15</radius><length>6.0</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.3 0.18 0.06 1</ambient>
+          <diffuse>0.4 0.25 0.1 1</diffuse>
+        </material>
+      </visual>
+      <!-- 松树冠(锥形, 用圆锥近似) -->
+      <collision name="canopy_collision">
+        <pose>0 0 5.5 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>1.8</radius><length>5.0</length></cylinder>
+        </geometry>
+      </collision>
+      <visual name="canopy_lower">
+        <pose>0 0 4.0 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>2.0</radius><length>1.5</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.04 0.28 0.03 0.35</ambient>
+          <diffuse>0.06 0.38 0.05 0.35</diffuse>
+        </material>
+        <transparency>0.6</transparency>
+      </visual>
+      <visual name="canopy_mid">
+        <pose>0 0 5.3 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>1.5</radius><length>1.5</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.05 0.3 0.04 0.35</ambient>
+          <diffuse>0.07 0.4 0.06 0.35</diffuse>
+        </material>
+        <transparency>0.6</transparency>
+      </visual>
+      <visual name="canopy_top">
+        <pose>0 0 6.5 0 0 0</pose>
+        <geometry>
+          <cylinder><radius>0.9</radius><length>1.5</length></cylinder>
+        </geometry>
+        <material>
+          <ambient>0.06 0.32 0.05 0.35</ambient>
+          <diffuse>0.08 0.42 0.07 0.35</diffuse>
+        </material>
+        <transparency>0.6</transparency>
+      </visual>
+    </link>
+  </model>
+</sdf>

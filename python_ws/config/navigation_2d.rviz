@@ -1,0 +1,177 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+  - Class: rviz/Tool Properties
+    Name: Tool Properties
+  - Class: rviz/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz/Grid
+      Name: Grid
+      Enabled: true
+      Line Style:
+        Line Width: 0.03
+        Value: Lines
+      Normal Cell Count: 0
+      Plane: XY
+      Plane Cell Count: 50
+      Reference Frame: <Fixed Frame>
+      Value: true
+
+    - Class: rviz/Map
+      Enabled: true
+      Name: 2D_Map
+      Topic: /map_2d
+      Alpha: 0.7
+      Color Scheme: map
+      Draw Behind: true
+      Queue Size: 1
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/MarkerArray
+      Enabled: true
+      Name: Drone_Position
+      Marker Topic: /patrol/drone_position
+      Queue Size: 1
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/Marker
+      Enabled: true
+      Name: Altitude_Plane
+      Marker Topic: /patrol/altitude_plane
+      Queue Size: 1
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/MarkerArray
+      Enabled: true
+      Name: Patrol_Waypoints
+      Marker Topic: /patrol/waypoints
+      Queue Size: 1
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/MarkerArray
+      Enabled: true
+      Name: Patrol_Route
+      Marker Topic: /patrol/planned_route
+      Queue Size: 1
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/Path
+      Color: 0; 255; 0
+      Enabled: true
+      Head Diameter: 0.3
+      Head Length: 0.2
+      Length: 0.3
+      Line Style: Lines
+      Line Width: 0.05
+      Name: Active_Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Shaft Diameter: 0.1
+      Shaft Length: 0.1
+      Topic: /patrol/active_path
+      Value: true
+
+    - Class: rviz/TF
+      Enabled: true
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Value: true
+      Frames:
+        All Enabled: false
+        body:
+          Value: true
+        camera_init:
+          Value: true
+        map:
+          Value: true
+        odom:
+          Value: true
+
+    - Class: rviz/Image
+      Enabled: true
+      Image Topic: /camera/rgb/image_raw
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: RGB_Camera
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+      Unreliable: false
+      Value: true
+
+    - Class: rviz/Image
+      Enabled: true
+      Image Topic: /camera/depth/image_raw
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Depth_Camera
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+      Unreliable: false
+      Value: true
+
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: camera_init
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/PublishPoint
+      Single click: true
+      Topic: /clicked_point
+    - Class: rviz/MoveCamera
+    - Class: rviz/Interact
+      Hide Inactive Objects: true
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+  Value: true
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 45
+      Focal Point:
+        X: 5
+        Y: 0
+        Z: 2
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 1.3
+      Yaw: 0
+      Value: Orbit (rviz)
+Window Geometry:
+  Displays:
+    collapsed: false
+  Tool Properties:
+    collapsed: false
+  Height: 900
+  Width: 1600
+  X: 0
+  Y: 0
+  RGB_Camera:
+    collapsed: false
+  Depth_Camera:
+    collapsed: false
+  Views:
+    collapsed: true

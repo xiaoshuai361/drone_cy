@@ -1,0 +1,2148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAK4 无人机仿真系统 - ROS 框架学习文档</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 导航 */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 260px;
+            height: 100vh;
+            background: #161b22;
+            border-right: 1px solid #30363d;
+            overflow-y: auto;
+            padding: 20px 15px;
+            z-index: 100;
+        }
+
+        nav h3 {
+            color: #58a6ff;
+            font-size: 14px;
+            margin: 15px 0 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        nav a {
+            display: block;
+            color: #8b949e;
+            text-decoration: none;
+            padding: 4px 10px;
+            font-size: 13px;
+            border-radius: 4px;
+            margin: 2px 0;
+        }
+
+        nav a:hover {
+            color: #c9d1d9;
+            background: #21262d;
+        }
+
+        nav a.active {
+            color: #58a6ff;
+            background: #1f2937;
+        }
+
+        main {
+            margin-left: 280px;
+            padding: 30px 0;
+        }
+
+        h1 {
+            color: #58a6ff;
+            font-size: 32px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #30363d;
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            color: #79c0ff;
+            font-size: 24px;
+            margin: 40px 0 15px;
+            padding-top: 20px;
+            border-top: 1px solid #21262d;
+        }
+
+        h3 {
+            color: #d2a8ff;
+            font-size: 18px;
+            margin: 25px 0 10px;
+        }
+
+        h4 {
+            color: #7ee787;
+            font-size: 15px;
+            margin: 15px 0 8px;
+        }
+
+        p {
+            margin: 10px 0;
+            color: #c9d1d9;
+        }
+
+        .highlight {
+            background: #1f2937;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .warning {
+            background: #2d1b00;
+            border-left: 4px solid #d29922;
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .info {
+            background: #0c2d48;
+            border-left: 4px solid #58a6ff;
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .success {
+            background: #0d2818;
+            border-left: 4px solid #3fb950;
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        code {
+            background: #21262d;
+            color: #79c0ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+        }
+
+        pre {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+            overflow-x: auto;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: #e6edf3;
+        }
+
+        .cmd {
+            color: #7ee787;
+        }
+
+        .comment {
+            color: #8b949e;
+        }
+
+        .string {
+            color: #a5d6ff;
+        }
+
+        .keyword {
+            color: #ff7b72;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th {
+            background: #161b22;
+            color: #58a6ff;
+            text-align: left;
+            padding: 10px 12px;
+            border: 1px solid #30363d;
+        }
+
+        td {
+            padding: 8px 12px;
+            border: 1px solid #30363d;
+        }
+
+        tr:hover {
+            background: #161b22;
+        }
+
+        /* 架构图 */
+        .diagram {
+            background: #0d1117;
+            border: 2px solid #30363d;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+            overflow-x: auto;
+        }
+
+        .diagram svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .node-box {
+            display: inline-block;
+            background: #1f2937;
+            border: 2px solid #58a6ff;
+            border-radius: 8px;
+            padding: 10px 18px;
+            margin: 5px;
+            color: #c9d1d9;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .node-green {
+            border-color: #3fb950;
+        }
+
+        .node-purple {
+            border-color: #d2a8ff;
+        }
+
+        .node-orange {
+            border-color: #d29922;
+        }
+
+        .node-red {
+            border-color: #f85149;
+        }
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .arrow {
+            color: #58a6ff;
+            font-size: 24px;
+            margin: 0 8px;
+        }
+
+        .arrow-down {
+            display: block;
+            text-align: center;
+            color: #58a6ff;
+            font-size: 24px;
+            margin: 5px 0;
+        }
+
+        .topic-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .topic-list li {
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: #161b22;
+            border-radius: 6px;
+            border-left: 3px solid #58a6ff;
+            font-family: monospace;
+        }
+
+        .topic-list li .type {
+            color: #d2a8ff;
+            font-size: 12px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 900px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 2px;
+        }
+
+        .badge-blue {
+            background: #0c2d48;
+            color: #58a6ff;
+        }
+
+        .badge-green {
+            background: #0d2818;
+            color: #3fb950;
+        }
+
+        .badge-purple {
+            background: #2a1441;
+            color: #d2a8ff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <h2 style="color:#58a6ff; font-size:16px; margin-bottom:20px;">📚 MAK4 仿真文档</h2>
+        <h3>基础概念</h3>
+        <a href="#ros-overview">ROS 概述</a>
+        <a href="#ros-concepts">核心概念</a>
+        <a href="#ros-comm">通信机制</a>
+        <h3>系统架构</h3>
+        <a href="#system-arch">整体架构</a>
+        <a href="#topic-map">Topic 拓扑图</a>
+        <a href="#node-detail">节点详解</a>
+        <h3>仿真环境</h3>
+        <a href="#px4-sitl">PX4 SITL</a>
+        <a href="#gazebo">Gazebo 仿真器</a>
+        <a href="#mavros">MAVROS 桥接</a>
+        <h3>传感器</h3>
+        <a href="#rgbd-camera">RGB-D 深度相机</a>
+        <a href="#mid360-lidar">Mid360 激光雷达</a>
+        <a href="#sensor-layout">传感器布局 ★</a>
+        <h3>SLAM 建图</h3>
+        <a href="#fastlio2">Fast-LIO2</a>
+        <a href="#octomap">OctoMap</a>
+        <a href="#pcd-2d-nav">PCD 2D栅格导航 ★</a>
+        <h3>路径规划与导航</h3>
+        <a href="#interactive-nav">交互式3D导航</a>
+        <a href="#rrt-star">3D RRT* 避障</a>
+        <h3>操作指南</h3>
+        <a href="#quick-start">快速启动 (Python)</a>
+        <a href="#quick-start-cpp">快速启动 (C++)</a>
+        <a href="#keyboard-teleop">键盘遥控</a>
+        <a href="#map-save-load">地图保存/加载</a>
+        <a href="#file-struct">文件结构</a>
+        <a href="#troubleshooting">故障排除</a>
+    </nav>
+
+    <main>
+        <div class="container">
+
+            <!-- ==================== 第1章: ROS 基础 ==================== -->
+            <h1 id="ros-overview">🤖 ROS (Robot Operating System) 概述</h1>
+
+            <div class="highlight">
+                <p><strong>ROS Noetic</strong> 是 ROS 1 的最后一个长期支持版本，运行在 Ubuntu 20.04 上。
+                    它不是一个传统意义上的操作系统，而是一个<strong>机器人软件框架</strong>，提供：</p>
+                <ul style="margin:10px 0 0 20px;">
+                    <li>进程间通信（发布/订阅、服务、动作）</li>
+                    <li>硬件抽象层</li>
+                    <li>包管理系统</li>
+                    <li>丰富的工具链（RViz可视化、rosbag录制回放、rqt调试）</li>
+                </ul>
+            </div>
+
+            <h2 id="ros-concepts">核心概念</h2>
+
+            <div class="grid-2">
+                <div class="highlight">
+                    <h4>📦 Package（功能包）</h4>
+                    <p>ROS 中代码组织的基本单元。每个功能包包含：</p>
+                    <ul style="margin-left:20px;font-size:14px;">
+                        <li><code>package.xml</code> — 包的元信息（名称、依赖）</li>
+                        <li><code>CMakeLists.txt</code> — 构建规则</li>
+                        <li><code>launch/</code> — 启动文件</li>
+                        <li><code>scripts/</code> — Python 脚本</li>
+                        <li><code>src/</code> — C++ 源码</li>
+                    </ul>
+                    <p style="margin-top:8px;">我们的功能包: <code>mak4_sim</code></p>
+                </div>
+                <div class="highlight">
+                    <h4>🔗 Node（节点）</h4>
+                    <p>ROS 系统中的<strong>最小执行单元</strong>，每个节点是一个独立进程：</p>
+                    <pre><code><span class="comment"># 查看正在运行的节点</span>
+<span class="cmd">rosnode list</span>
+
+<span class="comment"># 查看节点信息</span>
+<span class="cmd">rosnode info /mavros</span></code></pre>
+                    <p>例如: <code>/gazebo</code>, <code>/mavros</code>, <code>/laserMapping</code></p>
+                </div>
+                <div class="highlight">
+                    <h4>📡 Topic（话题）</h4>
+                    <p><strong>异步</strong>、单向的消息传递通道。发布者(Publisher)发送消息，订阅者(Subscriber)接收：</p>
+                    <pre><code><span class="comment"># 查看所有话题</span>
+<span class="cmd">rostopic list</span>
+
+<span class="comment"># 查看话题数据</span>
+<span class="cmd">rostopic echo /mavros/state</span>
+
+<span class="comment"># 查看话题频率</span>
+<span class="cmd">rostopic hz /mid360/points</span></code></pre>
+                </div>
+                <div class="highlight">
+                    <h4>📋 Message（消息）</h4>
+                    <p>话题中传输的数据结构，类似 struct：</p>
+                    <pre><code><span class="comment"># 常用消息类型</span>
+geometry_msgs/PoseStamped   <span class="comment"># 位姿</span>
+sensor_msgs/PointCloud2     <span class="comment"># 点云</span>
+sensor_msgs/Image           <span class="comment"># 图像</span>
+nav_msgs/Path               <span class="comment"># 路径</span>
+mavros_msgs/State           <span class="comment"># 飞控状态</span></code></pre>
+                </div>
+            </div>
+
+            <h2 id="ros-comm">通信机制详解</h2>
+
+            <div class="diagram">
+                <h4 style="margin-bottom:15px;">发布/订阅模型 (Pub/Sub)</h4>
+                <div class="flow-row">
+                    <div class="node-box node-green">传感器节点<br><small>/gazebo</small></div>
+                    <span class="arrow">→ 发布 →</span>
+                    <div class="node-box" style="border-color:#f0883e;">Topic<br><code>/mid360/points</code></div>
+                    <span class="arrow">→ 订阅 →</span>
+                    <div class="node-box node-purple">SLAM节点<br><small>/laserMapping</small></div>
+                </div>
+                <p style="margin-top:15px;color:#8b949e;">
+                    <strong>特点</strong>: 多对多、异步、解耦。发布者不需要知道谁在订阅。
+                </p>
+            </div>
+
+            <div class="diagram">
+                <h4 style="margin-bottom:15px;">服务模型 (Service)</h4>
+                <div class="flow-row">
+                    <div class="node-box node-green">客户端<br><small>请求切换模式</small></div>
+                    <span class="arrow">→ Request →</span>
+                    <div class="node-box" style="border-color:#f0883e;">Service<br><code>/mavros/set_mode</code></div>
+                    <span class="arrow">→ Response →</span>
+                    <div class="node-box node-purple">服务端<br><small>/mavros</small></div>
+                </div>
+                <p style="margin-top:15px;color:#8b949e;">
+                    <strong>特点</strong>: 一对一、同步、请求-应答模式。
+                </p>
+            </div>
+
+            <!-- ==================== 第2章: 系统架构 ==================== -->
+            <h1 id="system-arch">系统整体架构</h1>
+
+            <div class="diagram">
+                <h4 style="margin-bottom:20px;">MAK4 大棚仿真系统架构图</h4>
+
+                <div style="text-align:left; display:inline-block;">
+                    <!-- 第1层: 仿真环境 -->
+                    <div
+                        style="background:#1a2332;border:2px solid #1f6feb;border-radius:10px;padding:15px;margin:10px 0;">
+                        <h4 style="color:#58a6ff;margin:0 0 10px;">🎮 仿真层</h4>
+                        <div class="flow-row" style="justify-content:flex-start;">
+                            <div class="node-box">PX4 SITL<br><small>飞控固件仿真</small></div>
+                            <span class="arrow">↔</span>
+                            <div class="node-box node-green">Gazebo 11<br><small>物理/传感器仿真</small></div>
+                            <span class="arrow">↔</span>
+                            <div class="node-box node-orange">iris_rgbd_lidar<br><small>无人机模型+传感器</small></div>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">⬇ MAVLink (UDP 14540) ⬇</div>
+
+                    <!-- 第2层: ROS桥接 -->
+                    <div
+                        style="background:#1a2332;border:2px solid #3fb950;border-radius:10px;padding:15px;margin:10px 0;">
+                        <h4 style="color:#3fb950;margin:0 0 10px;">🔌 ROS 桥接层</h4>
+                        <div class="flow-row" style="justify-content:flex-start;">
+                            <div class="node-box node-green">MAVROS<br><small>MAVLink ↔ ROS</small></div>
+                            <div style="margin-left:20px;">
+                                <span class="badge badge-blue">/mavros/state</span>
+                                <span class="badge badge-blue">/mavros/local_position/pose</span>
+                                <span class="badge badge-blue">/mavros/imu/data</span>
+                                <span class="badge badge-blue">/mavros/setpoint_position/local</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">⬇ ROS Topics ⬇</div>
+
+                    <!-- 第3层: 感知 -->
+                    <div
+                        style="background:#1a2332;border:2px solid #d2a8ff;border-radius:10px;padding:15px;margin:10px 0;">
+                        <h4 style="color:#d2a8ff;margin:0 0 10px;">👁 感知层</h4>
+                        <div class="flow-row" style="justify-content:flex-start;flex-wrap:wrap;">
+                            <div class="node-box node-purple">RGB-D Camera<br><small>深度图 + RGB + 点云</small></div>
+                            <div class="node-box node-purple">Mid360 LiDAR<br><small>3D 激光点云</small></div>
+                            <span class="arrow">→</span>
+                            <div class="node-box node-red">Fast-LIO2<br><small>LiDAR-惯导融合SLAM</small></div>
+                            <span class="arrow">→</span>
+                            <div class="node-box">NaN过滤+降频<br><small>10Hz→1Hz</small></div>
+                            <span class="arrow">→</span>
+                            <div class="node-box node-orange">OctoMap<br><small>3D占据栅格</small></div>
+                        </div>
+                    </div>
+
+                    <div class="arrow-down">⬇ 地图 + 定位 ⬇</div>
+
+                    <!-- 第4层: 规划 -->
+                    <div
+                        style="background:#1a2332;border:2px solid #d29922;border-radius:10px;padding:15px;margin:10px 0;">
+                        <h4 style="color:#d29922;margin:0 0 10px;">🗺 规划层</h4>
+                        <div class="flow-row" style="justify-content:flex-start;">
+                            <div class="node-box node-orange">Boustrophedon<br><small>3D牛耕式全覆盖</small></div>
+                            <span class="arrow">→</span>
+                            <div class="node-box node-red">3D RRT*<br><small>局部避障规划</small></div>
+                            <span class="arrow">→</span>
+                            <div class="node-box node-green">位置控制<br><small>→ MAVROS → PX4</small></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 id="topic-map">ROS Topic 拓扑图</h2>
+
+            <div class="info">
+                <strong>💡 提示:</strong> 运行 <code>rqt_graph</code> 可以实时查看节点和话题的连接关系。
+            </div>
+
+            <h3>关键 Topics</h3>
+            <table>
+                <tr>
+                    <th>Topic</th>
+                    <th>消息类型</th>
+                    <th>发布者</th>
+                    <th>订阅者</th>
+                    <th>用途</th>
+                </tr>
+                <tr>
+                    <td><code>/mid360/points</code></td>
+                    <td>sensor_msgs/PointCloud2</td>
+                    <td>Gazebo (LiDAR plugin)</td>
+                    <td>Fast-LIO2</td>
+                    <td>3D激光点云数据</td>
+                </tr>
+                <tr>
+                    <td><code>/camera/rgb/image_raw</code></td>
+                    <td>sensor_msgs/Image</td>
+                    <td>Gazebo (Camera plugin)</td>
+                    <td>RViz</td>
+                    <td>RGB彩色图像</td>
+                </tr>
+                <tr>
+                    <td><code>/camera/depth/image_raw</code></td>
+                    <td>sensor_msgs/Image</td>
+                    <td>Gazebo (Camera plugin)</td>
+                    <td>RViz</td>
+                    <td>深度图</td>
+                </tr>
+                <tr>
+                    <td><code>/camera/depth/points</code></td>
+                    <td>sensor_msgs/PointCloud2</td>
+                    <td>Gazebo (Camera plugin)</td>
+                    <td>RViz, OctoMap</td>
+                    <td>深度相机点云</td>
+                </tr>
+                <tr>
+                    <td><code>/mavros/imu/data</code></td>
+                    <td>sensor_msgs/Imu</td>
+                    <td>MAVROS</td>
+                    <td>Fast-LIO2</td>
+                    <td>IMU加速度/角速度</td>
+                </tr>
+                <tr>
+                    <td><code>/mavros/local_position/pose</code></td>
+                    <td>geometry_msgs/PoseStamped</td>
+                    <td>MAVROS</td>
+                    <td>规划器</td>
+                    <td>无人机位姿 (EKF2)</td>
+                </tr>
+                <tr>
+                    <td><code>/mavros/state</code></td>
+                    <td>mavros_msgs/State</td>
+                    <td>MAVROS</td>
+                    <td>控制脚本</td>
+                    <td>飞控状态(armed/mode)</td>
+                </tr>
+                <tr>
+                    <td><code>/cloud_registered</code></td>
+                    <td>sensor_msgs/PointCloud2</td>
+                    <td>Fast-LIO2</td>
+                    <td>RViz</td>
+                    <td>SLAM配准后的点云 (frame_id=camera_init, 10Hz)</td>
+                </tr>
+                <tr>
+                    <td><code>/cloud_registered_body</code></td>
+                    <td>sensor_msgs/PointCloud2</td>
+                    <td>Fast-LIO2</td>
+                    <td>nan_filter</td>
+                    <td>★第十七次 body坐标系点云 (frame_id=body, 10Hz) — 需配置 scan_bodyframe_pub_en: true</td>
+                </tr>
+                <tr>
+                    <td><code>/cloud_filtered</code></td>
+                    <td>sensor_msgs/PointCloud2</td>
+                    <td>nan_filter</td>
+                    <td>throttle</td>
+                    <td>过滤NaN + 体素降采样后的点云 (frame_id=body, 10Hz, ~1500点/帧) ★第十七次改为body帧</td>
+                </tr>
+                <tr>
+                    <td><code>/cloud_throttled</code></td>
+                    <td>sensor_msgs/PointCloud2</td>
+                    <td>topic_tools/throttle</td>
+                    <td>OctoMap</td>
+                    <td>降频后的点云 (2Hz) → OctoMap输入 ★第十五次1→2Hz</td>
+                </tr>
+                <tr>
+                    <td><code>/mavros/vision_pose/pose</code></td>
+                    <td>geometry_msgs/PoseStamped</td>
+                    <td>slam_to_mavros</td>
+                    <td>PX4 EKF2</td>
+                    <td><s>SLAM视觉定位</s> 第十四次已移除 (回归光流方案)</td>
+                </tr>
+                <tr>
+                    <td><code>/coverage_path</code></td>
+                    <td>nav_msgs/Path</td>
+                    <td>Boustrophedon</td>
+                    <td>RRT*, RViz</td>
+                    <td>全覆盖路径</td>
+                </tr>
+                <tr>
+                    <td><code>/local_path</code></td>
+                    <td>nav_msgs/Path</td>
+                    <td>RRT*</td>
+                    <td>RViz</td>
+                    <td>避障后的局部路径</td>
+                </tr>
+                <tr>
+                    <td><code>/local_costmap_2d</code></td>
+                    <td>nav_msgs/OccupancyGrid</td>
+                    <td>grid_map_planner</td>
+                    <td>RViz</td>
+                    <td>叠合代价地图 (静态+动态障碍, 第24次)</td>
+                </tr>
+                <tr>
+                    <td><code>/mavros/setpoint_position/local</code></td>
+                    <td>geometry_msgs/PoseStamped</td>
+                    <td>RRT*</td>
+                    <td>MAVROS → PX4</td>
+                    <td>位置控制指令</td>
+                </tr>
+            </table>
+
+            <h2 id="node-detail">节点功能详解</h2>
+
+            <div class="grid-2">
+                <div class="highlight">
+                    <h4>🎯 PX4 SITL</h4>
+                    <p>PX4飞控固件的软件在环仿真。模拟真实飞控的全部功能：</p>
+                    <ul style="margin-left:20px;font-size:14px;">
+                        <li><strong>EKF2</strong>: 扩展卡尔曼滤波器, 融合IMU+光流+测距仪</li>
+                        <li><strong>位置/速度控制器</strong>: PID控制回路</li>
+                        <li><strong>飞行模式</strong>: OFFBOARD, AUTO.LAND, POSITION等</li>
+                        <li><strong>安全检查</strong>: 解锁条件、地理围栏</li>
+                    </ul>
+                </div>
+                <div class="highlight">
+                    <h4>🔌 MAVROS</h4>
+                    <p>MAVLink协议到ROS话题的双向桥接:</p>
+                    <ul style="margin-left:20px;font-size:14px;">
+                        <li>将PX4的传感器数据转为ROS消息</li>
+                        <li>将ROS控制指令转为MAVLink命令</li>
+                        <li>提供 <code>/mavros/cmd/arming</code> 等服务</li>
+                        <li>通过UDP连接到PX4 SITL</li>
+                    </ul>
+                </div>
+                <div class="highlight">
+                    <h4>🗺 Fast-LIO2</h4>
+                    <p>高性能LiDAR-惯导紧耦合里程计:</p>
+                    <ul style="margin-left:20px;font-size:14px;">
+                        <li><strong>输入</strong>: LiDAR点云 + IMU数据</li>
+                        <li><strong>输出</strong>: 配准点云地图 + 位姿轨迹</li>
+                        <li>使用 ikd-Tree 增量式KD树加速</li>
+                        <li>适合GPS拒止环境 (如大棚内)</li>
+                    </ul>
+                </div>
+                <div class="highlight">
+                    <h4>🧊 OctoMap Server</h4>
+                    <p>3D占据栅格地图构建:</p>
+                    <ul style="margin-left:20px;font-size:14px;">
+                        <li>将点云转换为八叉树表示的3D地图</li>
+                        <li>每个体素标记为: 占据/自由/未知</li>
+                        <li>用于碰撞检测和路径规划</li>
+                        <li>支持概率更新, 处理噪声</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ==================== 第3章: 仿真环境 ==================== -->
+            <h1 id="px4-sitl">PX4 SITL 仿真</h1>
+
+            <div class="highlight">
+                <h4>什么是 SITL?</h4>
+                <p><strong>Software In The Loop (软件在环)</strong> - 将PX4飞控固件编译为Linux可执行文件，
+                    与Gazebo仿真器通过MAVLink通信，完全模拟真实飞行控制。</p>
+            </div>
+
+            <pre><code><span class="comment"># PX4 SITL 启动流程:</span>
+<span class="comment">#</span>
+<span class="comment"># 1. PX4固件启动 → 模拟传感器 → EKF2融合 → 等待解锁</span>
+<span class="comment"># 2. Gazebo启动 → 加载世界和模型 → 物理模拟 → 传感器模拟</span>
+<span class="comment"># 3. PX4 ←→ Gazebo 通过 MAVLink 插件双向通信</span>
+<span class="comment"># 4. MAVROS 连接到 PX4 (UDP 14540) → 转换为 ROS topics</span>
+<span class="comment">#</span>
+<span class="comment"># 位于: ~/PX4-Autopilot (v1.14.3)</span></code></pre>
+
+            <h2 id="gazebo">Gazebo 仿真器</h2>
+
+            <p>Gazebo 11 提供完整的3D物理环境仿真：</p>
+
+            <div class="grid-2">
+                <div class="highlight">
+                    <h4>大棚世界 (greenhouse.world)</h4>
+                    <ul style="margin-left:20px;font-size:14px;">
+                        <li>大棚结构: 20m×12m×5m 拱形温室 (第十三次缩小)</li>
+                        <li>拱形屋顶骨架 (每4m一根拱梁)</li>
+                        <li>纵向横梁 (脊梁+檩条)</li>
+                        <li>半透明薄膜墙壁 (前门2.5m宽)</li>
+                        <li>6行黄瓜种植行 (16m长, 间距1.8m)</li>
+                        <li>藤蔓牵引线 (避障障碍物)</li>
+                    </ul>
+                </div>
+                <div class="highlight">
+                    <h4>森林世界 (forest.world)</h4>
+                    <ul style="margin-left:20px;font-size:14px;">
+                        <li>本地树模型 (无需网络下载)</li>
+                        <li>28棵 oak_tree_local (橡树)</li>
+                        <li>22棵 pine_tree_local (松树)</li>
+                        <li>灌木(6棵) + 倒木(3根)</li>
+                        <li>间距4-7m, 中央空地起飞</li>
+                        <li>树冠60%透明, 允许部分激光穿透</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2 id="mavros">MAVROS 详解</h2>
+
+            <div class="info">
+                <strong>MAVROS</strong> 是 MAVLink 协议的 ROS 封装。它将 PX4 飞控的所有数据通过标准 ROS 话题和服务暴露出来。
+            </div>
+
+            <h3>常用 MAVROS 操作</h3>
+
+            <pre><code><span class="comment"># 查看飞控连接状态</span>
+<span class="cmd">rostopic echo /mavros/state</span>
+
+<span class="comment"># 切换到OFFBOARD模式 (程序控制模式)</span>
+<span class="cmd">rosservice call /mavros/set_mode "custom_mode: 'OFFBOARD'"</span>
+
+<span class="comment"># 解锁电机</span>
+<span class="cmd">rosservice call /mavros/cmd/arming "value: true"</span>
+
+<span class="comment"># 发布位置控制指令</span>
+<span class="cmd">rostopic pub /mavros/setpoint_position/local geometry_msgs/PoseStamped \</span>
+<span class="cmd">  "header: {frame_id: 'map'}</span>
+<span class="cmd">   pose: {position: {x: 0.0, y: 0.0, z: 2.5}}"</span></code></pre>
+
+            <!-- ==================== 第4章: 传感器 ==================== -->
+            <h1 id="rgbd-camera">RGB-D 深度相机</h1>
+
+            <div class="highlight">
+                <h4>配置参数 (模拟 Intel RealSense D435i)</h4>
+                <table>
+                    <tr>
+                        <th>参数</th>
+                        <th>值</th>
+                    </tr>
+                    <tr>
+                        <td>分辨率</td>
+                        <td>640 × 480</td>
+                    </tr>
+                    <tr>
+                        <td>帧率</td>
+                        <td>30 fps</td>
+                    </tr>
+                    <tr>
+                        <td>水平FOV</td>
+                        <td>~70°</td>
+                    </tr>
+                    <tr>
+                        <td>测距范围</td>
+                        <td>0.1 ~ 10m</td>
+                    </tr>
+                    <tr>
+                        <td>安装位置</td>
+                        <td>机体前方 (x=0.12m)</td>
+                    </tr>
+                </table>
+
+                <h4 style="margin-top:15px;">ROS Topics</h4>
+                <ul class="topic-list">
+                    <li><code>/camera/rgb/image_raw</code> <span class="type">sensor_msgs/Image</span></li>
+                    <li><code>/camera/depth/image_raw</code> <span class="type">sensor_msgs/Image</span></li>
+                    <li><code>/camera/depth/points</code> <span class="type">sensor_msgs/PointCloud2</span></li>
+                    <li><code>/camera/rgb/camera_info</code> <span class="type">sensor_msgs/CameraInfo</span></li>
+                </ul>
+            </div>
+
+            <h2 id="mid360-lidar">Livox Mid-360 3D LiDAR</h2>
+
+            <div class="highlight">
+                <h4>配置参数</h4>
+                <table>
+                    <tr>
+                        <th>参数</th>
+                        <th>值</th>
+                    </tr>
+                    <tr>
+                        <td>水平FOV</td>
+                        <td>360°</td>
+                    </tr>
+                    <tr>
+                        <td>垂直FOV</td>
+                        <td>-7° ~ 52°</td>
+                    </tr>
+                    <tr>
+                        <td>垂直线数</td>
+                        <td>32线</td>
+                    </tr>
+                    <tr>
+                        <td>水平分辨率</td>
+                        <td>1° (360采样)</td>
+                    </tr>
+                    <tr>
+                        <td>测距范围</td>
+                        <td>0.1 ~ 40m</td>
+                    </tr>
+                    <tr>
+                        <td>扫描频率</td>
+                        <td>10 Hz</td>
+                    </tr>
+                    <tr>
+                        <td>安装位置</td>
+                        <td>机体顶部 (z=0.08m)</td>
+                    </tr>
+                </table>
+
+                <h4 style="margin-top:15px;">ROS Topic</h4>
+                <ul class="topic-list">
+                    <li><code>/mid360/points</code> <span class="type">sensor_msgs/PointCloud2</span></li>
+                </ul>
+            </div>
+
+            <!-- ==================== 第5章: SLAM ==================== -->
+            <h1 id="fastlio2">Fast-LIO2 SLAM</h1>
+
+            <div class="highlight">
+                <p><strong>FAST-LIO2</strong> (Fast LiDAR-Inertial Odometry) 是一个高效的 LiDAR-惯导紧耦合里程计和建图框架。</p>
+            </div>
+
+            <div class="diagram">
+                <h4 style="margin-bottom:15px;">Fast-LIO2 数据流</h4>
+                <div class="flow-row">
+                    <div class="node-box node-purple">LiDAR 点云<br><code>/mid360/points</code></div>
+                    <span class="arrow">→</span>
+                    <div class="node-box node-red" style="min-width:200px;">
+                        <strong>Fast-LIO2</strong><br>
+                        <small>预处理 → IMU前向传播<br>
+                            → 点云配准 → 状态更新<br>
+                            → ikd-Tree 增量更新</small>
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="node-box node-green">
+                        输出:<br>
+                        <code>/cloud_registered</code><br>
+                        <code>/Odometry</code><br>
+                        <code>/path</code>
+                    </div>
+                </div>
+                <div class="flow-row" style="margin-top:5px;">
+                    <div class="node-box node-purple">IMU 数据<br><code>/mavros/imu/data</code></div>
+                    <span class="arrow">→</span>
+                    <span style="min-width:200px;display:inline-block;">⬆</span>
+                </div>
+            </div>
+
+            <h3>关键配置文件</h3>
+            <pre><code><span class="comment"># ~/catkin_ws/src/mak4_sim/config/fastlio_sim_mid360.yaml</span>
+common:
+    lid_topic:  <span class="string">"/mid360/points"</span>      <span class="comment"># Gazebo LiDAR话题</span>
+    imu_topic:  <span class="string">"/mavros/imu/data"</span>    <span class="comment"># MAVROS IMU话题</span>
+
+preprocess:
+    lidar_type: <span class="keyword">2</span>    <span class="comment"># 2=Velodyne格式(Gazebo标准PointCloud2)</span>
+    scan_line: <span class="keyword">32</span>     <span class="comment"># 激光线数</span>
+
+mapping:
+    fov_degree: <span class="keyword">360</span>   <span class="comment"># 水平视角</span>
+    det_range: <span class="keyword">40.0</span>   <span class="comment"># 最大检测距离</span></code></pre>
+
+            <h2 id="octomap">OctoMap 3D 占据栅格</h2>
+
+            <div class="highlight">
+                <p>OctoMap 将 Fast-LIO2 输出的配准点云转换为<strong>八叉树结构</strong>的3D占据概率地图。</p>
+                <ul style="margin-left:20px;">
+                    <li>分辨率: 0.15m (每个体素边长)</li>
+                    <li>输入: <code>/cloud_throttled</code> (经降频到2Hz + 体素降采样的<strong>body帧</strong>点云)</li>
+                    <li>输出: <code>/octomap_binary</code>, <code>/occupied_cells_vis_array</code></li>
+                    <li>可在 RViz 中以彩色3D方块可视化</li>
+                    <li>max_range: 15m, hit/miss: 0.9/0.47, min/max: 0.12/0.97</li>
+                    <li>★ 第十七次TF修复: nan_filter改用body帧点云, OctoMap sensor origin正确</li>
+                </ul>
+            </div>
+
+            <div class="info">
+                <strong>💡 OctoMap 问题终极诊断 (第十七次)</strong><br>
+                <strong>真正根因是TF, 不是参数!</strong> 之前nan_filter订阅<code>/cloud_registered</code> (frame_id=camera_init),
+                OctoMap的frame_id也是camera_init。OctoMap计算sensor origin = TF(camera_init→camera_init) =
+                <strong>(0,0,0)</strong>。
+                所有射线从世界原点出发, 而非无人机位置!<br>
+                <strong>后果</strong>: 飞远后射线穿过之前建好的墙 → miss累积 → 墙壁瓦解。<br>
+                <strong>修复</strong>: nan_filter改为订阅<code>/cloud_registered_body</code> (frame_id=body)。
+                OctoMap通过TF(body→camera_init)得到正确的无人机位置作为sensor origin。
+                同时移除冲突的静态TF (body→base_link, odom→map)。<br><br>
+                <strong>OctoMap调参历史</strong>: 第13次max_range 20→5m(错), 第15次min=0.51(错),
+                第16次强hit+极弱miss(对但非根因) → <strong>第17次TF修复才是根本解决</strong>。
+            </div>
+
+            <!-- ========== 第十七次新增: PCD 2D导航方案 ========== -->
+            <h2 id="pcd-2d-nav">📐 PCD切片 → 2D栅格导航 (推荐)</h2>
+
+            <div class="highlight">
+                <p>第十七次新增的<strong>业内主流方案</strong>, 完全不依赖OctoMap:</p>
+                <ol style="margin-left:20px;">
+                    <li><strong>建图</strong>: FAST-LIO2 直接拼接全局3D点云 (.pcd), 建几公里不卡</li>
+                    <li><strong>Z轴切片</strong>: <code>pcd_to_2d_map.py</code> 在飞行高度±0.3m处切片</li>
+                    <li><strong>投影</strong>: 切片点云压平→标准2D占据栅格 (.pgm+.yaml)</li>
+                    <li><strong>导航</strong>: 在2D栅格上做A*路径规划, 定高飞行避障</li>
+                </ol>
+            </div>
+
+            <div class="info">
+                <strong>快速启动</strong>:<br>
+                <code># 第一步: 建图 (slam_mapping.launch + 键盘飞一遍 + save_map.py)</code><br>
+                <code># 第二步: 生成2D地图</code><br>
+                <code>rosrun mak4_sim pcd_to_2d_map.py --height 1.0 --tolerance 0.3</code><br>
+                <code># 第三步: 2D导航 (先启动mak4_greenhouse.launch)</code><br>
+                <code>roslaunch mak4_sim navigation_2d.launch</code><br>
+                <code># 第四步: RViz点击航点 → 终端输入 start</code><br><br>
+                <strong>终端命令</strong>: <code>alt H</code> 设高度 | <code>speed S</code> 设速度 |
+                <code>start</code> 开始 | <code>clear</code> 清除 | <code>stop</code> 悬停 | <code>home</code> 返航
+            </div>
+
+            <!-- ==================== 第6章: 路径规划 ==================== -->
+            <h1 id="interactive-nav">🎯 交互式 3D 导航</h1>
+
+            <div class="highlight">
+                <h4>工作流程</h4>
+                <p>本系统采用"先建图 → 保存 → 加载 → 交互式导航"的工作流：</p>
+                <ol style="margin-left:20px;">
+                    <li><strong>手动建图</strong>: 使用键盘遥控无人机在大棚内飞行，Fast-LIO2 实时建图</li>
+                    <li><strong>保存地图</strong>: 将 OctoMap (.bt) 和点云 (.pcd) 保存到磁盘</li>
+                    <li><strong>加载导航</strong>: 加载已保存的地图，在 RViz 中点击目标点，系统自动规划路径并飞行</li>
+                </ol>
+            </div>
+
+            <div class="diagram">
+                <h4 style="margin-bottom:10px;">交互式导航数据流</h4>
+                <div class="flow-row">
+                    <div class="node-box node-orange">RViz 点击目标<br><small>/clicked_point</small></div>
+                    <span class="arrow">→</span>
+                    <div class="node-box node-red">
+                        RRT* 3D 规划<br>
+                        <small>OctoMap 碰撞检测<br>
+                            路径平滑优化</small>
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="node-box node-green">
+                        自动飞行<br>
+                        <code>/mavros/setpoint_position/local</code><br>
+                        → 航点跟踪
+                    </div>
+                </div>
+            </div>
+
+            <div class="success">
+                <strong>使用方法</strong>: 在 RViz 工具栏中选择 "Publish Point" 工具，然后点击 3D 视图中的目标位置，
+                无人机将自动规划避障路径并飞过去。
+            </div>
+
+            <h2 id="rrt-star">3D RRT* 局部避障</h2>
+
+            <div class="highlight">
+                <h4>RRT* (Rapidly-exploring Random Tree Star)</h4>
+                <p>RRT* 是 RRT 的渐近最优变体，在 OctoMap 3D 地图中规划无碰撞路径：</p>
+                <ol style="margin-left:20px;">
+                    <li><strong>随机采样</strong>: 在3D空间中随机选点 (15%概率偏向目标点)</li>
+                    <li><strong>最近节点扩展</strong>: 向随机点方向延伸一步 (步长0.5m)</li>
+                    <li><strong>碰撞检测</strong>: 查询OctoMap, 检查路径是否穿过障碍 (安全半径0.3m)</li>
+                    <li><strong>重连优化</strong>: (RRT*特有) 检查是否可以通过新节点降低附近节点代价</li>
+                    <li><strong>路径平滑</strong>: 贪心跳点法去除冗余航点</li>
+                </ol>
+            </div>
+
+            <div class="diagram">
+                <h4 style="margin-bottom:10px;">RRT* 工作流程</h4>
+                <div class="flow-row">
+                    <div class="node-box node-orange">RViz 点击目标点<br><small>/clicked_point</small></div>
+                    <span class="arrow">→</span>
+                    <div class="node-box node-red">
+                        RRT* 规划<br>
+                        <small>OctoMap碰撞检测<br>
+                            路径平滑优化</small>
+                    </div>
+                    <span class="arrow">→</span>
+                    <div class="node-box node-green">
+                        避障路径<br>
+                        <code>/planned_path</code><br>
+                        → MAVROS 位置控制
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== 第7章: 操作指南 ==================== -->
+            <h1 id="quick-start">🚀 快速启动指南 (Python 版)</h1>
+
+            <div class="success">
+                <strong>Python 工作空间: ~/catkin_ws/</strong><br>
+                完整工作流: 启动仿真 → SLAM建图 → 键盘遥控飞行 → 保存地图 → 导航 (二选一)<br>
+                方案一: navigation.launch (OctoMap 3D导航) | 方案二: navigation_2d.launch (PCD 2D栅格导航)
+            </div>
+
+            <!-- ====== 第一阶段: 手动建图 ====== -->
+            <h3>阶段一: 手动遥控建图</h3>
+
+            <h3>步骤1: 启动大棚仿真环境</h3>
+            <pre><code><span class="comment"># 终端1: 启动 PX4 SITL + Gazebo(大棚) + MAVROS</span>
+<span class="cmd">roslaunch mak4_sim mak4_greenhouse.launch</span>
+
+<span class="comment"># 等待看到以下输出:</span>
+<span class="comment"># [INFO] [mavros]: FCU connected</span></code></pre>
+
+            <h3>步骤2: 启动 SLAM 建图</h3>
+            <pre><code><span class="comment"># 终端2: 启动 Fast-LIO2 + NaN过滤 + OctoMap + RViz</span>
+<span class="cmd">roslaunch mak4_sim slam_mapping.launch</span>
+
+<span class="comment"># RViz 中可看到: LiDAR点云、RGB图像、深度图、OctoMap</span></code></pre>
+
+            <h3 id="keyboard-teleop">步骤3: 键盘遥控飞行建图</h3>
+            <pre><code><span class="comment"># 终端3: 启动键盘遥控</span>
+<span class="cmd">rosrun mak4_sim keyboard_teleop.py</span>
+
+<span class="comment"># 按键说明:</span>
+<span class="comment">#   T     = 一键起飞 (自动OFFBOARD+ARM, 悬停2m)</span>
+<span class="comment">#   W/S   = 前进/后退</span>
+<span class="comment">#   A/D   = 左移/右移</span>
+<span class="comment">#   Q/E   = 左转/右转</span>
+<span class="comment">#   R/F   = 上升/下降</span>
+<span class="comment">#   Space = 悬停</span>
+<span class="comment">#   L     = 降落</span>
+<span class="comment">#   1/2   = 减速/加速</span></code></pre>
+
+            <!-- ====== 第二阶段: 保存地图 ====== -->
+            <h3>阶段二: 保存地图</h3>
+
+            <h3 id="map-save-load">步骤4: 保存地图</h3>
+            <div class="warning">
+                <strong>★ 重要</strong>: 保持 slam_mapping 运行! <strong>不要</strong>先 Ctrl+C!<br>
+                save_map.py 会自动完成: ① 保存OctoMap ② 停止Fast-LIO2 ③ 保存PCD
+            </div>
+            <pre><code><span class="comment"># 在新终端运行 (slam_mapping 必须仍在运行!):</span>
+<span class="cmd">source ~/catkin_ws/devel/setup.bash</span>
+<span class="cmd">rosrun mak4_sim save_map.py</span>
+
+<span class="comment"># 脚本自动执行:</span>
+<span class="comment">#   1. 检查 OctoMap Server 是否运行</span>
+<span class="comment">#   2. 调用 octomap_saver 保存 .bt 文件</span>
+<span class="comment">#   3. rosnode kill /laserMapping 触发 PCD 写出</span>
+<span class="comment">#   4. 等待并复制 PCD 文件</span>
+<span class="comment"># 地图保存到 ~/catkin_ws/maps/</span>
+
+<span class="comment"># 完成后可以 Ctrl+C 关闭 slam_mapping</span></code></pre>
+
+            <!-- ====== 第三阶段: 导航 (二选一) ====== -->
+            <h3>阶段三: 加载地图 + 导航 (两种方案二选一)</h3>
+
+            <div class="info">
+                <strong>★ 建图完成后有两种导航方案可选:</strong><br><br>
+                <strong>方案一: OctoMap 3D导航</strong> — 直接加载 .bt 地图 → 3D体素避障 → navigation.launch<br>
+                <strong>方案二: PCD 2D栅格导航</strong> — PCD切片→2D栅格 → 2D A*避障 → navigation_2d.launch<br><br>
+                两种方案共用阶段一、阶段二 (建图和保存完全相同), 区别仅在导航阶段。<br>
+                <strong>不需要关闭终端1的大棚仿真!</strong> 只需关闭 slam_mapping (终端2) 和 keyboard_teleop (终端3)。
+            </div>
+
+            <!-- ====== 方案一: OctoMap 3D导航 ====== -->
+            <h3 style="color:#2196F3; border-bottom:2px solid #2196F3; padding-bottom:5px;">
+                方案一: OctoMap 3D导航 (navigation.launch)</h3>
+
+            <h3>步骤5A: 启动OctoMap导航</h3>
+            <pre><code><span class="comment"># 确保 mak4_greenhouse.launch 仍在运行 (终端1)</span>
+<span class="comment"># 关闭 slam_mapping 和 keyboard_teleop</span>
+
+<span class="comment"># 终端2: 启动OctoMap导航 (加载已保存的 .bt 地图)</span>
+<span class="cmd">roslaunch mak4_sim navigation.launch</span>
+
+<span class="comment"># 如果地图文件路径不同:</span>
+<span class="cmd">roslaunch mak4_sim navigation.launch map_file:=/path/to/your/map.bt</span>
+
+<span class="comment"># RViz 打开后应该能看到:</span>
+<span class="comment">#   ● 彩色OctoMap地图 (使用原生插件, 大地图也能流畅显示)</span>
+<span class="comment">#   ● 红色球体+箭头 = 无人机当前位置和朝向 (实时更新)</span>
+<span class="comment">#   ● 白色文字 "UAV h=X.Xm" = 无人机当前高度</span></code></pre>
+
+            <h3>步骤6A: 设定巡检高度 → 点击航点 → 开始巡检</h3>
+            <pre><code><span class="comment"># 在 navigation.launch 的终端中输入命令:</span>
+
+<span class="comment"># 设定单层巡检高度 (例如2米):</span>
+<span class="cmd">alt 2.0</span>
+
+<span class="comment"># 或设定多层巡检高度 (例如1.5米和2.5米):</span>
+<span class="cmd">alt 1.5 2.5</span>
+<span class="comment"># 多层模式: 同一组航点在每个高度各飞一遍</span>
+
+<span class="comment"># 在 RViz 中用 Publish Point 工具点击巡检位置</span>
+<span class="comment"># ★ 只需关注x,y位置, 高度由alt命令自动设定!</span>
+
+<span class="comment"># 准备好后, 在终端输入:</span>
+<span class="cmd">start</span>
+<span class="comment"># 无人机自动: 起飞 → 逐点飞行(A*避障) → 完成</span>
+
+<span class="comment"># 常用命令:</span>
+<span class="cmd">undo</span>     <span class="comment"># 撤销最后一个航点</span>
+<span class="cmd">clear</span>    <span class="comment"># 清除全部航点重来</span>
+<span class="cmd">stop</span>     <span class="comment"># 紧急停止悬停</span>
+<span class="cmd">status</span>   <span class="comment"># 查看当前状态</span>
+<span class="cmd">home</span>     <span class="comment"># 返航到起飞点</span></code></pre>
+
+            <!-- ====== 方案二: PCD 2D栅格导航 ====== -->
+            <h3 style="color:#4CAF50; border-bottom:2px solid #4CAF50; padding-bottom:5px;">
+                方案二: PCD 2D栅格导航 (navigation_2d.launch)</h3>
+
+            <div class="success">
+                <strong>PCD点云 → Z轴切片 → 2D栅格 → A*导航</strong><br>
+                优势: 地图稳定不丢块、支持超大地图、2D栅格内存小速度快<br><br>
+                <strong>第24次新增: 动态障碍自动避障</strong><br>
+                <ul style="margin:5px 0 0 20px;">
+                    <li><strong>全局代价地图</strong>: 静态PGM栅格 + 预膨胀 (启动时加载)</li>
+                    <li><strong>局部代价地图</strong>: 实时点云切片 → 动态障碍格子 (TTL 3秒自动过期)</li>
+                    <li><strong>自动重规划</strong>: 飞行中每0.5秒检测路径碰撞, 检测到新障碍自动A*重规划</li>
+                    <li>RViz中 <code>/local_costmap_2d</code> 可查看叠合代价地图</li>
+                </ul>
+            </div>
+
+            <h3>步骤5B: 生成2D栅格地图 (多一步转换)</h3>
+            <pre><code><span class="comment"># save_map.py 保存了 PCD 文件, 现在转成 2D 栅格:</span>
+<span class="cmd">source ~/catkin_ws/devel/setup.bash</span>
+<span class="cmd">rosrun mak4_sim pcd_to_2d_map.py \
+  --pcd ~/catkin_ws/maps/slam_map.pcd \
+  --height 1.0 \
+  --tolerance 0.3 \
+  --resolution 0.05 \
+  --inflate 0.2 \
+  --output ~/catkin_ws/maps \
+  --name greenhouse_2d</span>
+
+<span class="comment"># 参数说明:</span>
+<span class="comment">#   --height    Z轴切片中心高度 (飞行高度, 默认1.0m)</span>
+<span class="comment">#   --tolerance Z轴切片半宽 (默认0.3m, 取[0.7, 1.3]范围)</span>
+<span class="comment">#   --resolution 栅格分辨率 (默认0.05m)</span>
+<span class="comment">#   --inflate   障碍物膨胀半径 (默认0.2m, 按无人机尺寸设)</span>
+<span class="comment"># 输出: greenhouse_2d.pgm + greenhouse_2d.yaml</span></code></pre>
+
+            <h3>步骤6B: 启动2D栅格导航</h3>
+            <pre><code><span class="comment"># 确保 mak4_greenhouse.launch 仍在运行 (终端1)</span>
+<span class="comment"># 关闭 slam_mapping 和 keyboard_teleop</span>
+
+<span class="comment"># 终端2: 启动 2D 栅格导航</span>
+<span class="cmd">roslaunch mak4_sim navigation_2d.launch</span>
+
+<span class="comment"># 自定义参数:</span>
+<span class="cmd">roslaunch mak4_sim navigation_2d.launch \
+  map_yaml:=~/catkin_ws/maps/greenhouse_2d.yaml \
+  altitude:=1.0 \
+  speed:=0.4</span>
+
+<span class="comment"># 操作方式与方案一完全相同:</span>
+<span class="comment"># alt设高度 → RViz点航点 → start开始</span>
+<span class="comment"># 支持的终端命令: alt, speed, start, clear, stop, home, undo, status</span></code></pre>
+
+            <h3>常用调试命令</h3>
+            <pre><code><span class="comment"># 查看所有节点</span>
+<span class="cmd">rosnode list</span>
+
+<span class="comment"># 查看话题列表和频率</span>
+<span class="cmd">rostopic list</span>
+<span class="cmd">rostopic hz /mid360/points</span>
+
+<span class="comment"># 查看tf树</span>
+<span class="cmd">rosrun tf view_frames && xdg-open frames.pdf</span>
+
+<span class="comment"># 查看节点图</span>
+<span class="cmd">rqt_graph</span>
+
+<span class="comment"># 录制数据包</span>
+<span class="cmd">rosbag record -a -O greenhouse_mapping.bag</span></code></pre>
+
+            <!-- ==================== C++ 快速启动 ==================== -->
+            <h1 id="quick-start-cpp">🚀 快速启动指南 (C++ 版) <span class="badge badge-green">第二十次新增</span></h1>
+
+            <div class="success">
+                <strong>C++ 工作空间: ~/catkin_ws_cpp/</strong><br>
+                所有 Python 脚本已用 C++17 重新实现, 性能更优 (A*规划快50~100倍, 点云过滤更高效)<br>
+                操作流程、终端命令 (alt/start/stop/clear/undo) 与 Python 版完全一致
+            </div>
+
+            <div class="warning">
+                <strong>★ 重要: 使用快捷命令切换工作空间!</strong><br>
+                <code>use_cpp</code> — 切换到C++工作空间 (自动加载PX4环境)<br>
+                <code>use_py</code> — 切换到Python工作空间 (自动加载PX4环境)<br>
+                ⚠️ 不要直接 <code>source setup.bash</code>, 否则PX4路径会丢失导致 "Resource not found: px4"!
+            </div>
+
+            <h3>C++ 节点对照表</h3>
+            <table>
+                <tr>
+                    <th>Python 脚本</th>
+                    <th>C++ 可执行文件</th>
+                    <th>功能</th>
+                </tr>
+                <tr>
+                    <td>configure_ekf2.py</td>
+                    <td>configure_ekf2_node</td>
+                    <td>EKF2 参数自动配置</td>
+                </tr>
+                <tr>
+                    <td>nan_filter.py</td>
+                    <td>nan_filter_node</td>
+                    <td>点云 NaN 过滤 + 体素降采样</td>
+                </tr>
+                <tr>
+                    <td>keyboard_teleop.py</td>
+                    <td>keyboard_teleop_node</td>
+                    <td>键盘遥控 (WASD+QE+RF, 混合定高)</td>
+                </tr>
+                <tr>
+                    <td>takeoff_hover_test.py</td>
+                    <td>takeoff_hover_test_node</td>
+                    <td>起飞悬停测试</td>
+                </tr>
+                <tr>
+                    <td>patrol_planner.py</td>
+                    <td>patrol_planner_node</td>
+                    <td>OctoMap 3D 分层巡检</td>
+                </tr>
+                <tr>
+                    <td>grid_map_planner.py</td>
+                    <td>grid_map_planner_node</td>
+                    <td>2D 栅格 A* 巡检</td>
+                </tr>
+                <tr>
+                    <td>save_map.py</td>
+                    <td>save_map_node</td>
+                    <td>保存 OctoMap + PCD</td>
+                </tr>
+                <tr>
+                    <td>pcd_to_2d_map.py</td>
+                    <td>pcd_to_2d_map</td>
+                    <td>PCD → 2D 栅格转换</td>
+                </tr>
+                <tr>
+                    <td>interactive_planner.py</td>
+                    <td>interactive_planner_node</td>
+                    <td>交互式 3D RRT* 导航</td>
+                </tr>
+                <tr>
+                    <td>rrt_star_planner.py</td>
+                    <td>rrt_star_planner_node</td>
+                    <td>3D RRT* 避障</td>
+                </tr>
+                <tr>
+                    <td>boustrophedon_planner.py</td>
+                    <td>boustrophedon_planner_node</td>
+                    <td>3D 牛耕式覆盖规划</td>
+                </tr>
+                <tr>
+                    <td>slam_to_mavros.py</td>
+                    <td>slam_to_mavros_node</td>
+                    <td>SLAM→MAVROS 位姿转发</td>
+                </tr>
+                <tr>
+                    <td>load_map.py</td>
+                    <td>load_map_node</td>
+                    <td>地图加载信息</td>
+                </tr>
+            </table>
+
+            <!-- ====== C++ 阶段一: 手动建图 ====== -->
+            <h3>阶段一: 手动遥控建图 (C++)</h3>
+
+            <h3>步骤1: 启动大棚仿真环境</h3>
+            <pre><code><span class="comment"># 终端1: 启动 PX4 SITL + Gazebo(大棚) + MAVROS + EKF2配置(C++)</span>
+<span class="cmd">use_cpp</span>   <span class="comment"># 切换到C++工作空间 (自动加载PX4)</span>
+<span class="cmd">roslaunch mak4_sim_cpp mak4_greenhouse.launch</span>
+
+<span class="comment"># 森林场景替换为:</span>
+<span class="cmd">roslaunch mak4_sim_cpp mak4_forest.launch</span></code></pre>
+
+            <h3>步骤2: 启动 SLAM 建图</h3>
+            <pre><code><span class="comment"># 终端2: 启动 Fast-LIO2 + NaN过滤(C++) + OctoMap + RViz</span>
+<span class="cmd">use_cpp</span>   <span class="comment"># 切换到C++工作空间 (自动加载PX4)</span>
+<span class="cmd">roslaunch mak4_sim_cpp slam_mapping.launch</span></code></pre>
+
+            <h3>步骤3: 键盘遥控飞行建图</h3>
+            <pre><code><span class="comment"># 终端3: 启动键盘遥控 (C++ 版)</span>
+<span class="cmd">use_cpp</span>   <span class="comment"># 切换到C++工作空间 (自动加载PX4)</span>
+<span class="cmd">rosrun mak4_sim_cpp keyboard_teleop_node</span>
+
+<span class="comment"># 按键说明 (与Python版完全一致):</span>
+<span class="comment">#   T     = 一键起飞 (自动OFFBOARD+ARM, 悬停2m, 位置保持)</span>
+<span class="comment">#   W/S   = 前进/后退 (机头方向)</span>
+<span class="comment">#   A/D   = 左移/右移</span>
+<span class="comment">#   Q/E   = 左转/右转</span>
+<span class="comment">#   R/F   = 上升/下降</span>
+<span class="comment">#   Space = 悬停</span>
+<span class="comment">#   L     = 降落</span>
+<span class="comment">#   1/2   = 减速/加速</span></code></pre>
+
+            <!-- ====== C++ 阶段二: 保存地图 ====== -->
+            <h3>阶段二: 保存地图 (C++)</h3>
+
+            <h3>步骤4: 保存地图</h3>
+            <div class="warning">
+                <strong>★ 重要</strong>: 保持 slam_mapping 运行! <strong>不要</strong>先 Ctrl+C!
+            </div>
+            <pre><code><span class="comment"># 终端4: 保存地图 (C++ 版)</span>
+<span class="cmd">use_cpp</span>   <span class="comment"># 切换到C++工作空间 (自动加载PX4)</span>
+<span class="cmd">rosrun mak4_sim_cpp save_map_node</span>
+
+<span class="comment"># 地图保存到 ~/catkin_ws/maps/</span></code></pre>
+
+            <!-- ====== C++ 阶段三: 导航 ====== -->
+            <h3>阶段三: 加载地图 + 导航 (C++, 两种方案二选一)</h3>
+
+            <div class="info">
+                <strong>★ 与 Python 版相同的两种方案:</strong><br>
+                <strong>方案一: OctoMap 3D导航</strong> — navigation.launch<br>
+                <strong>方案二: PCD 2D栅格导航</strong> — navigation_2d.launch
+            </div>
+
+            <!-- C++ 方案一 -->
+            <h3 style="color:#2196F3; border-bottom:2px solid #2196F3; padding-bottom:5px;">
+                方案一: OctoMap 3D导航 (C++)</h3>
+
+            <pre><code><span class="comment"># 终端2: 启动 OctoMap 导航 (C++ patrol_planner_node)</span>
+<span class="cmd">use_cpp</span>   <span class="comment"># 切换到C++工作空间 (自动加载PX4)</span>
+<span class="cmd">roslaunch mak4_sim_cpp navigation.launch</span>
+
+<span class="comment"># 终端命令 (与Python版完全一致):</span>
+<span class="cmd">alt 2.0</span>              <span class="comment"># 设定巡检高度</span>
+<span class="cmd">alt 1.5 2.5</span>          <span class="comment"># 多层巡检</span>
+<span class="cmd">start</span>                <span class="comment"># 开始巡检</span>
+<span class="cmd">stop</span>                 <span class="comment"># 紧急停止</span>
+<span class="cmd">clear</span>                <span class="comment"># 清除航点</span>
+<span class="cmd">undo</span>                 <span class="comment"># 撤销最后航点</span>
+<span class="cmd">home</span>                 <span class="comment"># 返航</span>
+<span class="cmd">status</span>               <span class="comment"># 查看状态</span></code></pre>
+
+            <!-- C++ 方案二 -->
+            <h3 style="color:#4CAF50; border-bottom:2px solid #4CAF50; padding-bottom:5px;">
+                方案二: PCD 2D栅格导航 (C++)</h3>
+
+            <pre><code><span class="comment"># 先转换 PCD → 2D 栅格 (C++ 版, 速度更快):</span>
+<span class="cmd">use_cpp</span>   <span class="comment"># 切换到C++工作空间 (自动加载PX4)</span>
+<span class="cmd">rosrun mak4_sim_cpp pcd_to_2d_map \
+  --pcd ~/catkin_ws/maps/slam_map.pcd \
+  --height 1.0 \
+  --tolerance 0.3 \
+  --resolution 0.05 \
+  --inflate 0.2 \
+  --output ~/catkin_ws/maps \
+  --name greenhouse_2d</span>
+
+<span class="comment"># 启动 2D 栅格导航 (C++ grid_map_planner_node):</span>
+<span class="cmd">roslaunch mak4_sim_cpp navigation_2d.launch</span>
+
+<span class="comment"># 操作命令与方案一相同: alt → RViz点航点 → start</span></code></pre>
+
+            <h3>C++ vs Python 性能对比</h3>
+            <table>
+                <tr>
+                    <th>指标</th>
+                    <th>Python</th>
+                    <th>C++</th>
+                    <th>提升</th>
+                </tr>
+                <tr>
+                    <td>A* 路径规划 (1132×408 地图)</td>
+                    <td>~500ms</td>
+                    <td>~5ms</td>
+                    <td>~100倍</td>
+                </tr>
+                <tr>
+                    <td>点云 NaN 过滤</td>
+                    <td>~15ms/帧</td>
+                    <td>~2ms/帧</td>
+                    <td>~7倍</td>
+                </tr>
+                <tr>
+                    <td>OctoMap 体素提取</td>
+                    <td>~50ms</td>
+                    <td>~5ms</td>
+                    <td>~10倍</td>
+                </tr>
+                <tr>
+                    <td>RRT* 3D 搜索 (3000次迭代)</td>
+                    <td>~2s</td>
+                    <td>~100ms</td>
+                    <td>~20倍</td>
+                </tr>
+            </table>
+
+            <h2 id="file-struct">📁 文件结构</h2>
+
+            <pre><code>~/catkin_ws/src/mak4_sim/
+├── CMakeLists.txt
+├── package.xml
+├── config/
+│   ├── fastlio_sim_mid360.yaml    <span class="comment"># Fast-LIO2 仿真配置</span>
+│   ├── slam_mapping.rviz          <span class="comment"># SLAM建图 RViz配置</span>
+│   ├── navigation.rviz            <span class="comment"># OctoMap导航 RViz配置</span>
+│   └── navigation_2d.rviz         <span class="comment"># ★ 2D栅格导航 RViz配置 (第十七次新增)</span>
+├── launch/
+│   ├── mak4_sitl.launch           <span class="comment"># 空旷场景仿真</span>
+│   ├── mak4_forest.launch         <span class="comment"># 森林场景仿真</span>
+│   ├── mak4_greenhouse.launch     <span class="comment"># 大棚场景仿真</span>
+│   ├── slam_mapping.launch        <span class="comment"># SLAM建图 (Fast-LIO2+NaN过滤+OctoMap+RViz)</span>
+│   ├── navigation.launch          <span class="comment"># OctoMap 2D分层巡检导航</span>
+│   └── navigation_2d.launch       <span class="comment"># ★ PCD 2D栅格导航 (第十七次新增)</span>
+├── models/
+│   ├── greenhouse/                <span class="comment"># 大棚结构模型 (40m×16m)</span>
+│   ├── cucumber_row/              <span class="comment"># 黄瓜种植行模型 (36m长)</span>
+│   ├── iris_rgbd_lidar/           <span class="comment"># 自定义无人机(+相机+雷达)</span>
+│   ├── oak_tree_local/            <span class="comment"># 橡树模型 (半透明树冠)</span>
+│   └── pine_tree_local/           <span class="comment"># 松树模型 (半透明树冠)</span>
+├── scripts/
+│   ├── takeoff_hover_test.py      <span class="comment"># 起飞悬停测试</span>
+│   ├── keyboard_teleop.py         <span class="comment"># 键盘遥控 (WASD+QE+RF)</span>
+│   ├── nan_filter.py              <span class="comment"># 点云NaN过滤 (订阅body帧 ★第十七次修复TF)</span>
+│   ├── save_map.py                <span class="comment"># 保存OctoMap+PCD地图</span>
+│   ├── load_map.py                <span class="comment"># 地图加载说明</span>
+│   ├── patrol_planner.py          <span class="comment"># ★ OctoMap 2D分层航线巡检 (A*避障+多层)</span>
+│   ├── pcd_to_2d_map.py           <span class="comment"># ★ PCD→2D栅格转换 (第十七次新增)</span>
+│   ├── grid_map_planner.py        <span class="comment"># ★ 2D栅格A*巡检导航 (第十七次新增)</span>
+│   ├── configure_ekf2.py          <span class="comment"># EKF2参数自动配置 (测距仪+光流)</span>
+│   ├── interactive_planner.py     <span class="comment"># 交互式3D RRT*导航(旧)</span>
+│   ├── boustrophedon_planner.py   <span class="comment"># 3D牛耕式覆盖规划(旧)</span>
+│   └── rrt_star_planner.py        <span class="comment"># 3D RRT* 避障规划(旧)</span>
+├── maps/                          <span class="comment"># 保存的地图文件目录 (需手动mkdir)</span>
+└── worlds/
+    ├── mak4_empty.world           <span class="comment"># 空旷世界</span>
+    ├── forest.world               <span class="comment"># 森林世界</span>
+    └── greenhouse.world           <span class="comment"># 大棚世界 (10行×1.8m间距)</span></code></pre>
+
+            <h3>C++ 工作空间结构 <span class="badge badge-green">第二十次新增</span></h3>
+            <pre><code>~/catkin_ws_cpp/src/mak4_sim_cpp/
+├── CMakeLists.txt                 <span class="comment"># C++17, 13 个可执行目标</span>
+├── package.xml
+├── src/
+│   ├── configure_ekf2_node.cpp    <span class="comment"># EKF2参数配置 (ParamSet/Get双回退)</span>
+│   ├── slam_to_mavros_node.cpp    <span class="comment"># Odometry→PoseStamped转发</span>
+│   ├── nan_filter_node.cpp        <span class="comment"># PCL NaN移除 + VoxelGrid 0.15m</span>
+│   ├── keyboard_teleop_node.cpp   <span class="comment"># 原始终端I/O + 位置保持模式</span>
+│   ├── takeoff_hover_test_node.cpp<span class="comment"># 自动起飞/悬停/降落测试</span>
+│   ├── patrol_planner_node.cpp    <span class="comment"># OctoMap体素提取 + 2D A*分层巡检</span>
+│   ├── grid_map_planner_node.cpp  <span class="comment"># PGM加载 + A*栅格导航</span>
+│   ├── save_map_node.cpp          <span class="comment"># OctoMap .bt + PCD 保存</span>
+│   ├── pcd_to_2d_map_node.cpp     <span class="comment"># PCD→2D PGM/YAML (命令行工具)</span>
+│   ├── boustrophedon_planner_node.cpp <span class="comment"># 3D牛耕式覆盖路径</span>
+│   ├── rrt_star_planner_node.cpp  <span class="comment"># 3D RRT* + OctoMap避障</span>
+│   ├── interactive_planner_node.cpp<span class="comment"># 点击→RRT*→飞行</span>
+│   └── load_map_node.cpp          <span class="comment"># 地图加载信息</span>
+├── launch/
+│   ├── mak4_greenhouse.launch     <span class="comment"># PX4+Gazebo(大棚)+MAVROS+EKF2(C++)</span>
+│   ├── mak4_forest.launch         <span class="comment"># PX4+Gazebo(森林)+MAVROS+EKF2(C++)</span>
+│   ├── slam_mapping.launch        <span class="comment"># Fast-LIO2+NaN过滤(C++)+OctoMap+RViz</span>
+│   ├── navigation.launch          <span class="comment"># OctoMap导航+patrol_planner_node(C++)</span>
+│   └── navigation_2d.launch       <span class="comment"># 2D栅格导航+grid_map_planner_node(C++)</span>
+├── config/                        <span class="comment"># RViz + YAML 配置 (从原工作空间复制)</span>
+├── worlds → ~/catkin_ws/src/mak4_sim/worlds   <span class="comment"># 符号链接</span>
+├── models → ~/catkin_ws/src/mak4_sim/models   <span class="comment"># 符号链接</span>
+└── docs   → ~/catkin_ws/src/mak4_sim/docs     <span class="comment"># 符号链接</span></code></pre>
+
+            <h2 id="troubleshooting">🔧 故障排除</h2>
+
+            <div class="warning">
+                <h4>Gazebo 黑屏 / 模型加载失败</h4>
+                <p><strong>原因</strong>: 使用了在线模型库 <code>model://xxx</code>，WSL2下载失败<br>
+                    <strong>解决</strong>: 所有模型已改为本地模型 (<code>models/</code> 目录下)
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>MAVROS 无法连接</h4>
+                <pre><code><span class="comment"># 检查 PX4 SITL 是否运行</span>
+<span class="cmd">ps aux | grep px4</span>
+
+<span class="comment"># 检查 UDP 端口</span>
+<span class="cmd">ss -ulnp | grep 14540</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>Fast-LIO2 无点云输出</h4>
+                <pre><code><span class="comment"># 检查 LiDAR 话题是否有数据</span>
+<span class="cmd">rostopic hz /mid360/points</span>
+
+<span class="comment"># 检查 IMU 话题</span>
+<span class="cmd">rostopic hz /mavros/imu/data</span>
+
+<span class="comment"># Fast-LIO2 需要同时收到 LiDAR 和 IMU 数据才能工作</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>GPU 加速问题 (WSL2)</h4>
+                <pre><code><span class="comment"># 检查 GPU 状态</span>
+<span class="cmd">glxinfo | grep "OpenGL renderer"</span>
+<span class="comment"># 应显示: D3D12 (NVIDIA GeForce RTX 4060 Laptop GPU)</span>
+
+<span class="comment"># 如果显示 llvmpipe, 说明没有GPU加速</span>
+<span class="comment"># 解决: 更新 Windows 显卡驱动</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>OctoMap NaN 错误 (computeRayKeys failed)</h4>
+                <p><strong>现象</strong>: OctoMap 持续报 <code>WARNING: computeRayKeys: coordinate NaN</code><br>
+                    <strong>原因</strong>: Fast-LIO2 输出的点云中包含 NaN 坐标点<br>
+                    <strong>解决</strong>: slam_mapping.launch 已自动加载 nan_filter.py 节点过滤 NaN 点。
+                    如仍有问题:
+                </p>
+                <pre><code><span class="comment"># 检查过滤后的点云是否正常</span>
+<span class="cmd">rostopic hz /cloud_filtered</span>
+
+<span class="comment"># 检查原始点云</span>
+<span class="cmd">rostopic hz /cloud_registered</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>导航时 "octree is empty" / 地图未加载</h4>
+                <p><strong>现象</strong>: <code>roslaunch navigation.launch</code> 后显示 "Nothing to publish, octree is
+                    empty"<br>
+                    <strong>原因</strong>: .bt 地图文件未正确传入 octomap_server<br>
+                    <strong>解决</strong>: 确认地图文件存在:
+                </p>
+                <pre><code><span class="cmd">ls -lh ~/catkin_ws/maps/greenhouse_map.bt</span>
+
+<span class="comment"># 如果文件为空或不存在, 重新建图并保存</span>
+<span class="comment"># 指定其他路径:</span>
+<span class="cmd">roslaunch mak4_sim navigation.launch map_file:=/path/to/map.bt</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>RViz 相机显示 "No Image"</h4>
+                <p><strong>原因</strong>: Gazebo 相机插件可能未正常启动 (WSL2 GPU 渲染限制)<br>
+                    <strong>排查</strong>:
+                </p>
+                <pre><code><span class="comment"># 检查相机话题是否有数据</span>
+<span class="cmd">rostopic hz /camera/rgb/image_raw</span>
+<span class="cmd">rostopic hz /camera/depth/image_raw</span>
+
+<span class="comment"># 如果无输出: 在 Gazebo 中确认无人机模型加载正常</span>
+<span class="comment"># WSL2 下深度相机渲染可能不稳定, 不影响SLAM和导航</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>PCD 文件找不到</h4>
+                <p><strong>原因</strong>: Fast-LIO2 仅在节点停止时写出PCD文件<br>
+                    <strong>解决</strong>: 使用 save_map.py 自动处理 (会自动停止 Fast-LIO2 触发PCD写出)
+                </p>
+                <pre><code><span class="comment"># PCD 保存路径:</span>
+<span class="cmd">ls ~/catkin_ws/src/FAST_LIO/PCD/scans.pcd</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>nan_filter 报错 "C-contiguous" (第五次修复)</h4>
+                <p><strong>现象</strong>: 建图时持续报错
+                    <code>ValueError: To change to a dtype of a different size, the array must be C-contiguous</code><br>
+                    <strong>原因</strong>: numpy 2D数组列切片后内存不连续, .view() 要求连续布局<br>
+                    <strong>影响</strong>: <strong>这是核心Bug!</strong> nan_filter崩溃 → /cloud_filtered 无数据 → OctoMap空 →
+                    保存的地图为空 → 导航无地图<br>
+                    <strong>修复</strong>: 使用 <code>np.ascontiguousarray()</code> 保证内存连续
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>save_map 超时 / 地图只有0.1KB (第五次修复)</h4>
+                <p><strong>现象</strong>: OctoMap保存超时, .bt文件极小(137字节), 导航时无地图<br>
+                    <strong>原因</strong>: 用户先Ctrl+C停止了slam_mapping(杀死OctoMap Server), 再运行save_map<br>
+                    <strong>正确流程</strong>:
+                </p>
+                <pre><code><span class="comment"># ★ 保持 slam_mapping 运行! 不要先 Ctrl+C!</span>
+<span class="comment"># 在新终端直接运行:</span>
+<span class="cmd">rosrun mak4_sim save_map.py</span>
+<span class="comment"># 脚本会自动: ① 保存OctoMap ② 停止Fast-LIO ③ 保存PCD</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>地图保存报错 "Filestream not open" (第十二次修复)</h4>
+                <p><strong>现象</strong>: <code>octomap_saver -f .../maps/xxx.bt</code> 报错
+                    "Filestream to xxx.bt not open"<br>
+                    <strong>原因</strong>: 目标目录 <code>maps/</code> 不存在! octomap_saver 不会自动创建目录<br>
+                    <strong>修复</strong>:
+                </p>
+                <pre><code><span class="cmd">mkdir -p ~/catkin_ws/src/mak4_sim/maps/</span>
+<span class="comment"># 然后重新运行保存命令</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>SLAM算法选择: 为什么用Fast-LIO2而不是其他? (第十二次分析)</h4>
+                <p><strong>疑问</strong>: ESKF_LIO / funny_lidar_slam 是否比 Fast-LIO2 更好?<br>
+                    <strong>结论</strong>: <strong>不需要换!</strong> Fast-LIO2 (3700+星) 是最优选择。
+                </p>
+                <ul style="margin-left:20px;margin-top:5px;">
+                    <li><strong>ESKF_LIO</strong> (284星): Fast-LIO 1.0 的重实现, 精度和效率都不如 Fast-LIO2</li>
+                    <li><strong>funny_lidar_slam</strong> (877星): 多方法集成+回环检测, 但核心SLAM不如Fast-LIO2</li>
+                    <li><strong>关键认知</strong>: 别人展示的"大地图"是PCD点云文件(纯堆叠), 不是实时OctoMap。
+                        点云无八叉树开销, 所以看起来很好。我们的Fast-LIO2点云同样优秀, 瓶颈在OctoMap Server。</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <h4>RViz 找不到 "Publish Point" 工具 (第五次修复)</h4>
+                <p><strong>现象</strong>: 导航时RViz工具栏没有Publish Point按钮, 无法点击目标点<br>
+                    <strong>原因</strong>: RViz配置文件缺少 Tools 段落<br>
+                    <strong>修复</strong>: 已创建专用 navigation.rviz, Publish Point 为默认选中工具<br>
+                    <strong>使用</strong>: 在RViz工具栏找到带十字准星图标的按钮, 点击后在3D视图中点击目标位置
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>OctoMap 始终为空 / base_footprint 不存在 (第六次修复) ★ 关键</h4>
+                <p><strong>现象</strong>: 建图时报 "Transform error: base_footprint does not exist"，
+                    "No ground plane found"，最终 "octree is empty"<br>
+                    <strong>根因</strong>: <code>filter_ground=true</code> 需要 <code>base_footprint</code> 坐标系来确定地面方向，
+                    但 PX4+Fast-LIO2 系统中不存在该帧 → 每次回调都立即失败 → OctoMap 从未接收任何数据<br>
+                    <strong>修复</strong>: 设置 <code>filter_ground=false</code>。3D建图不需要地面过滤。
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>相机话题命名空间错误 (第六次修复)</h4>
+                <p><strong>现象</strong>: <code>rostopic hz /camera/rgb/image_raw</code> 显示 "no new messages"<br>
+                    <strong>原因</strong>: SDF 中 <code>&lt;robotNamespace&gt;&lt;/robotNamespace&gt;</code> 为空，
+                    Gazebo 使用模型名作为命名空间导致话题发布在非预期路径<br>
+                    <strong>修复</strong>: 设为 <code>&lt;robotNamespace&gt;/&lt;/robotNamespace&gt;</code> 强制根命名空间<br>
+                    <strong>WSL2说明</strong>: 如果话题存在但仍无图像，是 WSL2 D3D12→OpenGL 翻译层的渲染限制，不影响SLAM和导航
+                </p>
+                <pre><code><span class="comment"># 诊断步骤:</span>
+<span class="cmd">rostopic list | grep camera</span>  <span class="comment"># 先看话题是否存在</span>
+<span class="cmd">rostopic hz /camera/rgb/image_raw</span>  <span class="comment"># 再看是否有数据</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>2D分层航线巡检系统 (第八次重大更新) ★★★</h4>
+                <p><strong>核心改进</strong>: 从3D标点+RRT* → 2D分层标点+A*避障+正确起飞流程<br>
+                    <strong>解决的问题</strong>:
+                </p>
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li><strong>无法起飞</strong>: PX4 OFFBOARD需先发送目标高度setpoint≥2秒 → 新增PRE_ARM阶段</li>
+                    <li><strong>只能标障碍物</strong>: RViz点击只能打中可见物体 → 改为2D标点,忽略z,用终端设高度</li>
+                    <li><strong>RRT*不稳定</strong>: 随机搜索经常失败 → 改用A*(确定性,100%找到路径)</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>使用方法</strong>:</p>
+                <pre><code><span class="comment"># 1. 启动导航</span>
+<span class="cmd">roslaunch mak4_sim navigation.launch</span>
+
+<span class="comment"># 2. 设定巡检高度 (在终端输入)</span>
+alt 2.0              <span class="comment"># 单层: 2.0m高度巡检</span>
+alt 1.5 2.5 3.5      <span class="comment"># 多层: 三个高度各巡检一遍</span>
+
+<span class="comment"># 3. 在RViz俯视图中用 Publish Point 点击巡检位置</span>
+<span class="comment">#    (只需关注x,y位置, 高度由alt自动设定)</span>
+
+<span class="comment"># 4. 开始巡检</span>
+start                <span class="comment"># 自动起飞→巡检→多层自动切换</span>
+
+<span class="comment"># 其他命令:</span>
+undo     <span class="comment"># 撤销最后一个航点</span>
+clear    <span class="comment"># 清除全部航点</span>
+stop     <span class="comment"># 紧急停止</span>
+status   <span class="comment"># 查看状态</span>
+home     <span class="comment"># 返航</span></code></pre>
+                <p><strong>多层巡检流程</strong>: 输入 <code>alt 1.5 2.5</code> → 点击航点 → <code>start</code>
+                    → 起飞到1.5m → 飞完所有航点 → 自动回到起点 → 爬升到2.5m → 再飞同样航点 → 完成</p>
+                <p><strong>RViz显示</strong>:</p>
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li>淡蓝色半透明平面 = 巡检高度层</li>
+                    <li>橙色圆柱 + 白色编号 = 航点 (在巡检高度)</li>
+                    <li>橙色虚线 = 航点到地面的参考线</li>
+                    <li>绿色粗线 = 当前飞行段 (A*避障后路径)</li>
+                    <li>黄色细线 = 待飞段; 已飞过段自动隐藏</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>避障算法</strong>: A*(A-Star) 2D网格搜索。
+                    系统从3D OctoMap中提取指定高度(±1m)的2D障碍物切片,
+                    在该平面上进行8方向A*路径搜索 + 安全膨胀。
+                    比RRT*更快、100%确定性、不会"找不到路径"。</p>
+            </div>
+
+            <div class="warning">
+                <h4>无人机不起飞修复 (第八次) ★★★</h4>
+                <p><strong>现象</strong>: 输入start后桨叶转但不升空<br>
+                    <strong>根因</strong>: PX4 OFFBOARD要求进入前必须连续接收setpoint ≥2秒。
+                    旧代码只发送1秒地面位置setpoint(z=0) → PX4认为目标是地面 → 不升空<br>
+                    <strong>修复</strong>: 新增状态机 PRE_ARM → TAKING_OFF → EXECUTING:
+                </p>
+                <ol style="margin-left: 20px;">
+                    <li>PRE_ARM: 持续发送"目标巡检高度"的setpoint 2.5秒</li>
+                    <li>切OFFBOARD + ARM</li>
+                    <li>TAKING_OFF: 等待爬升到目标高度(误差&lt;0.3m)</li>
+                    <li>EXECUTING: 开始沿航线飞行</li>
+                </ol>
+            </div>
+
+            <div class="warning">
+                <h4>TF树断裂: odom → camera_init (第七次修复, 第十七次优化)</h4>
+                <p><strong>现象</strong>: RViz报 "No transform from [odom] to frame [camera_init]"<br>
+                    <strong>原因</strong>: MAVROS使用 <code>odom</code> 坐标系，Fast-LIO2 使用 <code>camera_init</code>，
+                    两棵TF树没有连接<br>
+                    <strong>修复 (第七次)</strong>: 添加静态TF <code>odom → map → camera_init</code><br>
+                    <strong>优化 (第十七次)</strong>: slam_mapping.launch 移除多余的 body→base_link, base_link→base_link_frd 静态TF
+                    (与MAVROS发布的odom→base_link冲突导致TF树环路), 只保留 map→camera_init
+                </p>
+                <pre><code><span class="comment"># 验证TF链连通:</span>
+<span class="cmd">rosrun tf tf_echo odom camera_init</span>  <span class="comment"># 应输出零变换</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>OctoMap彩色方块消失 (第七次修复 + 第九次升级)</h4>
+                <p><strong>现象</strong>: 建图时OctoMap彩色方块在大地图时消失，只剩点云<br>
+                    <strong>原因 (第七次)</strong>: <code>max_range=15</code> 偏小 + 传感器概率模型未调优<br>
+                    <strong>修复 (第七次)</strong>: max_range→30, 添加传感器概率参数(hit=0.7, miss=0.4), 设置latch=false持续更新<br>
+                    <strong>原因 (第九次)</strong>: 大地图体素巨多, 之前用 <code>MarkerArray</code> 话题显示,
+                    每个体素是一个 Marker, 几十万个 Marker 导致 RViz 渲染崩溃<br>
+                    <strong>修复 (第九次)</strong>: 改用 <code>octomap_rviz_plugin/OccupancyGrid</code> 原生显示插件,
+                    直接读取 <code>/octomap_binary</code> 二进制八叉树数据,
+                    GPU直接渲染, 即使超大地图也能流畅显示彩色体素
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>无人机位置在RViz中不更新 (第九次修复) ★★</h4>
+                <p><strong>现象</strong>: 导航时无人机位置不在RViz中显示/更新<br>
+                    <strong>原因</strong>: navigation.rviz 中没有无人机位置显示, patrol_planner.py 没有发布位置标记<br>
+                    <strong>修复</strong>: patrol_planner.py 新增 <code>/patrol/drone_position</code> 话题,
+                    以约5Hz发布无人机位置标记 (红色球体+朝向箭头+高度文字+垂直参考线)。
+                    navigation.rviz 新增 Drone_Position 显示订阅该话题。
+                </p>
+                <pre><code><span class="comment"># 验证无人机位置是否发布:</span>
+<span class="cmd">rostopic hz /patrol/drone_position</span>  <span class="comment"># 应约5Hz</span>
+<span class="cmd">rostopic echo /mavros/local_position/pose -n 1</span>  <span class="comment"># 应有位置数据</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>OctoMap原生显示插件配置说明 (第九次新增)</h4>
+                <p><strong>插件</strong>: <code>octomap_rviz_plugin/OccupancyGrid</code> (已安装
+                    ros-noetic-octomap-rviz-plugins)<br>
+                    <strong>话题</strong>: <code>/octomap_binary</code> (类型: octomap_msgs/Octomap)<br>
+                    <strong>关键参数</strong>:
+                </p>
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li><code>Voxel Coloring: Z-Axis</code> → 按高度着色 (蓝→绿→黄→红)</li>
+                    <li><code>Voxel Rendering: Occupied Voxels</code> → 只显示被占据体素</li>
+                    <li><code>Tree Depth: 16</code> → 最细显示(如果卡, 降到14提升性能)</li>
+                    <li><code>Max/Min Height Display</code> → 限制显示高度范围</li>
+                </ul>
+                <p style="margin-top: 10px;"><strong>为什么比 MarkerArray 好?</strong><br>
+                    MarkerArray 将每个体素转为独立 Marker 对象 → 大地图几十万个 → RViz 崩溃。<br>
+                    原生插件直接读取 OctoMap 二进制格式, GPU 批量渲染, 性能提升数十倍。
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>OctoMap彩色方块建图一会后消失 / 墙壁瓦解 (第十~十七次终极修复) ★★★</h4>
+                <p><strong>现象</strong>: 启动建图后, OctoMap彩色方块显示正常, 但飞行一段时间后方块不再更新;
+                    更严重的是飞过某面墙后, 那面墙的OctoMap开始瓦解消失<br>
+                    <strong>根因1 (第十次)</strong>: nan_filter.py 性能瓶颈 → 重写为numpy向量化<br>
+                    <strong>根因2 (第十二次)</strong>: OctoMap八叉树插入超时 → 降频+调参<br>
+                    <strong>根因3 (第十三次)</strong>: max_range过大 + miss过低 → 调参缓解<br>
+                    <strong>根因4 (第十七次, 真正根因!) ★★★</strong>: <strong>TF导致sensor origin错误!</strong>
+                    nan_filter订阅的/cloud_registered (frame_id=camera_init), OctoMap frame_id也是camera_init,
+                    TF(camera_init→camera_init)=(0,0,0), 射线从原点发出 → 飞远后穿墙 → 瓦解!<br>
+                    <strong>终极修复</strong>: 改订阅 <code>/cloud_registered_body</code> (frame_id=body),
+                    OctoMap通过TF(body→camera_init)获得正确sensor origin。
+                </p>
+                <ol style="margin-left:20px;margin-top:5px;">
+                    <li>★ TF修复: nan_filter订阅body帧 (第十七次根本修复)</li>
+                    <li>max_range: 15m, hit: 0.9, miss: 0.47, min: 0.12, max: 0.97</li>
+                    <li>降频: 2Hz (throttle降频)</li>
+                </ol>
+                <pre><code><span class="comment"># 验证数据流各环节:</span>
+<span class="cmd">rostopic hz /cloud_filtered</span>    <span class="comment"># 应稳定约 10Hz</span>
+<span class="cmd">rostopic hz /cloud_throttled</span>   <span class="comment"># 应稳定约 1Hz ★关键</span>
+<span class="cmd">rostopic hz /octomap_binary</span>    <span class="comment"># 应接近 1Hz (OctoMap输出)</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>建图精度不足, 细小结构有缺口 (第十次优化, 第十二次回调)</h4>
+                <p><strong>现象</strong>: 黄瓜大棚每排植株建图不连续, 有间隔缺口<br>
+                    <strong>原因</strong>: Fast-LIO2 下采样过于激进 (filter_size=0.3m), 黄瓜支架仅 3cm 直径, 被丢弃<br>
+                    <strong>第十次优化</strong>: filter_size 0.3→0.15, point_filter_num 3→2, OctoMap resolution 0.15→0.10<br>
+                    <strong>第十二次平衡</strong>: OctoMap resolution 0.10→0.15 (回调),
+                    因为0.10m导致大地图八叉树节点过多引发性能问题。0.15m是精度与性能的最佳平衡点。
+                    Fast-LIO2本身的filter_size保持0.15不变。
+                </p>
+                <p><strong>当前参数汇总</strong>:</p>
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li>Fast-LIO2: <code>filter_size_surf/map</code>: 0.15m</li>
+                    <li>Fast-LIO2: <code>point_filter_num</code>: 2</li>
+                    <li>Fast-LIO2: <code>scan_bodyframe_pub_en</code>: true ★第十七次新增</li>
+                    <li>OctoMap: <code>resolution</code>: 0.15m (精度与性能平衡)</li>
+                    <li>OctoMap: <code>sensor_model/hit/miss</code>: 0.9 / 0.47 (★miss接近中性, 防止墙壁瓦解)</li>
+                    <li>OctoMap: <code>max_range</code>: 15m (★第十七次TF修复后恢复)</li>
+                    <li>OctoMap: <code>sensor_model/min/max</code>: 0.12 / 0.97</li>
+                    <li>OctoMap输入: 2Hz (throttle降频)</li>
+                    <li>nan_filter: 订阅 <code>/cloud_registered_body</code> (frame_id=body) ★第十七次TF修复</li>
+                    <li>patrol_planner: <code>resolution</code>: 0.15 (匹配 OctoMap)</li>
+                    <li>飞行速度: 6.9 m/s (第二十二次 ×3 提速), 起飞高度 1.5m</li>
+                    <li>视觉定位: <s>slam_to_mavros.py</s> 第十四次已移除 (回归光流方案)</li>
+                    <li>configure_ekf2: 参数就绪探测改用 <code>MAV_SYS_ID</code> (第二十一次补充, 消除 EKF2_HGT_REF 等 GET 报错)</li>
+                    <li>keyboard_teleop: 混合控制 — 水平=速度, 垂直=位置锁定 (第二十三次, 解决R→W持续上升和高度漂移)</li>
+                    <li>相机TF: 添加 <code>body → camera_link</code> 静态变换 (第二十三次, 消除camera_link帧无变换报错)</li>
+                    <li>C++ setlocale: 全部13个节点添加 <code>std::setlocale(LC_ALL, "")</code> (第二十四次, 修复中文显示???????)</li>
+                    <li>起飞yaw保持: PRE_ARM/TAKING_OFF 传入当前yaw, 不再强制yaw=0 (第二十四次, 修复地面旋转无法起飞)</li>
+                    <li>动态避障: grid_map_planner 订阅 <code>/cloud_filtered</code> 实时点云, 检测飞行途中新障碍并自动A*重规划 (第二十四次)</li>
+                    <li>局部代价地图: <code>/local_costmap_2d</code> 发布叠合代价地图 (静态+动态, 第二十四次)</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <h4>森林场景 3D 激光雷达建图 (第十一次更新)</h4>
+                <p><strong>功能</strong>: 60×60m 中等密度森林场景, 可用 SLAM + OctoMap 建图和路径规划<br>
+                    <strong>特点</strong>: 50棵树 (28橡+22松, 间距4-7m), 树冠60%透明, 中央空地起飞<br>
+                    <strong>关键</strong>: 森林和大棚共用同一套 slam_mapping + navigation 流程,
+                    只需替换第一步的启动文件
+                </p>
+                <pre><code><span class="comment"># 森林仿真 (替代 mak4_greenhouse.launch):</span>
+<span class="cmd">roslaunch mak4_sim mak4_forest.launch</span>
+
+<span class="comment"># 建图 (命令相同):</span>
+<span class="cmd">roslaunch mak4_sim slam_mapping.launch</span>
+
+<span class="comment"># 键盘遥控 (W=机头方向前进):</span>
+<span class="cmd">rosrun mak4_sim keyboard_teleop.py</span>
+
+<span class="comment"># 保存地图 (建议用不同文件名):</span>
+<span class="cmd">rosrun octomap_server octomap_saver -f ~/catkin_ws/src/mak4_sim/maps/forest_map.bt</span>
+
+<span class="comment"># 导航 (指定森林地图):</span>
+<span class="cmd">roslaunch mak4_sim navigation.launch map_file:=$(rospack find mak4_sim)/maps/forest_map.bt</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>TF警告 "No transform from [base_link]" (第十一次修复, 第十七次更新)</h4>
+                <p><strong>现象</strong>: SLAM建图时RViz报告
+                    <code>No transform from [base_link] to frame [camera_init]</code><br>
+                    <strong>第十一次修复</strong>: 添加 body→base_link 静态TF<br>
+                    <strong>第十七次更新</strong>: 移除了 body→base_link 和 base_link→base_link_frd 静态TF,
+                    因为它们与MAVROS的odom→base_link形成TF树环路。
+                    RViz中base_link相关的警告可以忽略(不影响SLAM和导航功能)。
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>按W键无人机不朝机头方向飞 (第十一次修复) ★★★</h4>
+                <p><strong>现象</strong>: 按W键无人机始终沿一个固定方向飞行, 不跟随机头朝向<br>
+                    <strong>原因</strong>: MAVROS <code>setpoint_velocity/cmd_vel</code> 话题在未设置
+                    <code>frame_id</code> 时默认为世界坐标系 (LOCAL_NED),
+                    导致 <code>linear.x</code> 始终是世界+X方向, 不随偏航角变化<br>
+                    <strong>修复</strong>: <code>send_velocity()</code> 中从姿态四元数提取 yaw,
+                    将机体坐标速度旋转到世界坐标系:
+                </p>
+                <pre><code><span class="comment"># 旋转公式 (机体系→世界系ENU):</span>
+world_x = body_vx × cos(yaw) - body_vy × sin(yaw)
+world_y = body_vx × sin(yaw) + body_vy × cos(yaw)</code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>飞行时高度自动上升/下降 (第十一次修复)</h4>
+                <p><strong>现象</strong>: 大棚内飞行时无人机高度缓慢漂移<br>
+                    <strong>原因</strong>: PX4 默认使用气压计定高 (精度~50cm), 室内气流导致气压波动<br>
+                    <strong>修复</strong>: 在无人机底部添加下视激光测距仪 (模拟微空 MTF-01P):
+                </p>
+                <ul style="margin-left: 20px; margin-top: 5px;">
+                    <li><strong>测距仪</strong>: 1D激光, 50Hz, 量程0.04-8m, PX4 MAVLink直连</li>
+                    <li><strong>光流</strong>: PX4Flow 64×64, 20Hz, 提供室内水平定位</li>
+                    <li>Gazebo插件: <code>libgazebo_lidar_plugin.so</code> + <code>libgazebo_opticalflow_plugin.so</code>
+                    </li>
+                    <li>EKF2参数: <code>EKF2_HGT_REF=2</code> (测距仪主高度源),
+                        <code>EKF2_OF_CTRL=1</code> (光流定位), <code>EKF2_RNG_CTRL=2</code> (测距仪始终启用)
+                        <br><small>第十九次修复: 参数名更新为PX4 v1.14.3版本</small>
+                    </li>
+                    <li>配置脚本: <code>configure_ekf2.py</code> 启动时自动设置, 兼容新旧参数名, 带重试机制</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <h4>悬停漂移 + 飞行偏方向 (第十三次尝试修复, 第十四次回滚)</h4>
+                <p><strong>现象</strong>: 空格悬停后一段时间开始歪, 前进时高度漂移<br>
+                    <strong>第十三次尝试</strong>: 添加 slam_to_mavros.py 将SLAM位姿回传PX4 EKF2<br>
+                    <strong>第十四次回滚</strong>: 视觉定位导致EKF2混乱(参数不存在+无数据源) → 无法起飞(高度负数)<br>
+                    <strong>第十九次修复</strong>: 发现旧参数名(EKF2_HGT_MODE/EKF2_AID_MASK/EKF2_RNG_AID)在PX4 v1.14.3中不存在,
+                    已更新为正确的参数名(EKF2_HGT_REF/EKF2_OF_CTRL/EKF2_RNG_CTRL), 带重试和参数就绪检测。<br>
+                    <strong>当前方案</strong>: 纯光流+测距仪定位 (EKF2_OF_CTRL=1, EKF2_HGT_REF=2, EKF2_RNG_CTRL=2),
+                    与真机 MTF-01P 光流测距一体模块匹配。
+                </p>
+                <pre><code><span class="comment"># EKF2 定位架构 (第十九次修复):</span>
+<span class="comment"># IMU + 光流(EKF2_OF_CTRL=1) + 测距仪(EKF2_HGT_REF=2) → EKF2 → 位置控制</span>
+<span class="comment"># Fast-LIO2 SLAM 独立运行, 不回传PX4</span>
+<span class="comment"># PX4 v1.14.3 参数名: HGT_REF, RNG_CTRL, OF_CTRL (非旧版HGT_MODE/AID_MASK)</span>
+
+<span class="comment"># 验证光流工作:</span>
+<span class="cmd">rostopic hz /mavros/local_position/pose</span>  <span class="comment"># 应稳定输出</span></code></pre>
+            </div>
+
+            <div class="warning">
+                <h4>navigation_2d 地图不显示 + TF报错 (第十八次修复) ★★</h4>
+                <p><strong>现象</strong>: 运行 <code>navigation_2d.launch</code> 后 RViz 空白, 相机TF全部报错<br>
+                    <strong>根因</strong> (三个问题叠加):
+                </p>
+                <ol style="margin-left:20px;margin-top:5px;">
+                    <li><strong>话题名不匹配</strong>: grid_map_planner.py 发布 <code>/patrol_markers</code>,
+                        <code>/drone_marker</code> 等,
+                        但 RViz 配置订阅的是 <code>/patrol/waypoints</code>, <code>/patrol/drone_position</code> → 修复为统一命名
+                    </li>
+                    <li><strong>缺少Map显示</strong>: RViz 没有添加 <code>rviz/Map</code> 类型的 display 来显示 <code>/map_2d</code>
+                        话题 → 添加</li>
+                    <li><strong>TF缺失</strong>: 导航阶段 SLAM 未运行, 没有 body 帧 TF; 同时缺少 <code>odom→map</code> 连接 → 添加静态TF</li>
+                </ol>
+                <p><strong>同时修复</strong>: 去除OctoMap显示插件(2D导航不用OctoMap), 统一 frame_id 为 <code>camera_init</code>,
+                    添加高度平面/无人机箭头等可视化。</p>
+            </div>
+
+            <div class="warning">
+                <h4>飞行速度调整历史 (当前: 6.9m/s)</h4>
+                <p><strong>现象</strong>: 第十七次添加了 flight_speed=0.4m/s 限速, 导航时无人机飞行过慢<br>
+                    <strong>第十八次</strong>: 去除限速逻辑, 恢复原始直接发送目标点的方式<br>
+                    <strong>第十九次</strong>: 恢复限速逻辑但提高到0.8m/s<br>
+                    <strong>第二十次</strong>: 提高到1.8m/s<br>
+                    <strong>第二十一次</strong>: 提高到2.3m/s, 起飞高度2.0→1.0m<br>
+                    <strong>第二十二次</strong>: 提高到6.9m/s (3倍), 起飞高度→1.5m, 移除地面参考平面
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>遥控起飞后自动落地 (第二十次修复) ★★</h4>
+                <p><strong>现象</strong>: keyboard_teleop 输入 T 起飞后, 无人机爬升到目标高度就直接落地<br>
+                    <strong>根因</strong>: 起飞完成后进入速度模式, 所有速度分量为0, PX4 判断无有效指令 → 自动降落<br>
+                    <strong>修复</strong>: 起飞完成后切换为"位置保持模式", 持续发送当前高度的 position setpoint,
+                    保证PX4始终有有效目标。只有在用户按W/S/A/D/Q/E/R/F时才切回速度模式。
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>R→W持续上升 + 高度漂移 (第二十三次修复) ★★★</h4>
+                <p><strong>现象</strong>: 按R上升后按W前飞, 无人机继续上升; 飞行中高度忽高忽低<br>
+                    <strong>根因</strong>:<br>
+                    1) 按键未互清零: R只设vz=+0.3但不清vx/vy, W只设vx=+0.5但不清vz → vz残留<br>
+                    2) 纯速度模式(vz=0)依赖PX4速度控制器保持高度, 但光流+测距仪EKF2有微小漂移<br>
+                    <strong>修复</strong>: 两管齐下<br>
+                    a) 所有按键清零全部轴: WASD/QE同时设vz=0, R/F同时设vx=vy=yr=0<br>
+                    b) 引入混合控制 (<code>setpoint_raw/local</code> + <code>PositionTarget</code>):<br>
+                    &nbsp;&nbsp;• 水平移动: velocity.x/y (速度控制)<br>
+                    &nbsp;&nbsp;• 垂直保持: position.z (位置锁定, <strong>★彻底消除高度漂移</strong>)<br>
+                    &nbsp;&nbsp;• 按R/F时: 切换为全速度模式(手动升降)<br>
+                    &nbsp;&nbsp;• 按WASD/QE时: 自动锁定当前高度为Z轴位置目标
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>高度平面可视化看不到 (第二十次修复) ★</h4>
+                <p><strong>现象</strong>: 输入 alt 设置巡检高度后, RViz中看不到高度平面<br>
+                    <strong>根因</strong>: 原实现使用单个 Marker (CUBE), 尺寸/透明度不合适, 且缺少文字标签<br>
+                    <strong>修复</strong>: 改用 MarkerArray 发布:
+                </p>
+                <ul style="margin-left:20px;margin-top:5px;">
+                    <li>半透明蓝色平面 (CUBE, alpha=0.15, 100m×100m)</li>
+                    <li>白色文字标签 "巡检高度: X.Xm" (TEXT_VIEW_FACING)</li>
+                    <li>蓝色边框线 (LINE_STRIP)</li>
+                </ul>
+            </div>
+
+            <div class="warning">
+                <h4>C++ 工作空间说明 (第二十次新增, 第二十一次修复启动问题) ★★★</h4>
+                <p><strong>背景</strong>: 所有自写 Python 脚本已用 C++17 重新实现, 编译后性能大幅提升<br>
+                    <strong>工作空间</strong>: <code>~/catkin_ws_cpp/</code> (独立于原 Python 工作空间)<br>
+                    <strong>编译</strong>: <code>cd ~/catkin_ws_cpp && catkin_make</code><br>
+                    <strong>共享资源</strong>: worlds/models/docs 通过符号链接共享, FAST_LIO/livox_ros_driver 也是符号链接<br>
+                    <strong>使用差异</strong>: <code>rosrun mak4_sim xxx.py</code> →
+                    <code>rosrun mak4_sim_cpp xxx_node</code><br>
+                    <strong>⚠️ 切换工作空间</strong>: 不要直接 <code>source setup.bash</code>! 使用快捷命令:<br>
+                    &nbsp;&nbsp;• <code>use_cpp</code> — 切换到C++工作空间 (自动加载PX4环境)<br>
+                    &nbsp;&nbsp;• <code>use_py</code> — 切换到Python工作空间 (自动加载PX4环境)<br>
+                    <strong>原因</strong>: catkin的setup.bash会重置ROS_PACKAGE_PATH, 导致PX4路径丢失,
+                    <code>$(find px4)</code>失败。快捷命令会自动重新追加PX4路径。
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>MAVROS启动参数报错 SYS_AUTOSTART/MAV_TYPE/COM_ARM_EKF_AB (第二十一次修复) ★★★</h4>
+                <p><strong>现象</strong>: 启动大棚/森林场景时, MAVROS日志中出现:
+                    <code>PR: Unknown parameter to get: SYS_AUTOSTART</code>,
+                    <code>PR: Unknown parameter to get: MAV_TYPE</code>,
+                    <code>PR: Unknown parameter to get: COM_ARM_EKF_AB</code>
+                </p>
+                <p><strong>根因</strong>:<br>
+                    ① SYS_AUTOSTART / MAV_TYPE: PX4参数确实存在, 但MAVROS启动过快, PX4参数服务器未就绪时就发起请求<br>
+                    ② COM_ARM_EKF_AB: PX4 v1.14.3 已移除, 拆分为 COM_ARM_EKF_POS / VEL / HGT / YAW<br>
+                    ③ 旧版 .pyc 缓存含过期参数名
+                </p>
+                <p><strong>修复</strong>:<br>
+                    ① 将4个launch文件中MAVROS从 <code>&lt;include&gt;</code> 改为直接 <code>&lt;node&gt;</code> 启动, 加入8秒延迟<br>
+                    ② configure_ekf2 节点加入12秒延迟<br>
+                    ③ 删除旧版 .pyc 缓存
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>RViz中只能在彩色块上布置航点 (第二十一次修复) ★★</h4>
+                <p><strong>现象</strong>: 使用 RViz "Publish Point" 工具时, 只能点击OctoMap彩色体素, 空白区域无法布点<br>
+                    <strong>根因</strong>: Publish Point 依赖射线投射(ray-cast), 空白区域无3D几何体可命中<br>
+                    <strong>修复</strong>: 在所有4个规划器中添加"地面参考平面" — 200m×200m CUBE Marker 位于 z=-0.05,
+                    alpha=0.08 (几乎不可见但可被射线命中), 用户可在地图任意XY位置点击布置航点
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>EKF2参数全部失败 "Unknown parameter" (第十九次修复) ★★★</h4>
+                <p><strong>现象</strong>: 启动大棚模型时所有EKF2参数报错 "Unknown parameter to set"<br>
+                    <strong>根因</strong>: PX4 v1.14.3 将EKF2参数大幅重命名, configure_ekf2.py 使用的旧参数名:
+                </p>
+                <pre><code><span class="comment"># PX4 v1.14.3 参数名变更:</span>
+EKF2_HGT_MODE → EKF2_HGT_REF     <span class="comment"># 高度参考源 (0=气压,1=GPS,2=测距仪)</span>
+EKF2_RNG_AID  → EKF2_RNG_CTRL    <span class="comment"># 测距仪 (0=禁用,1=条件,2=始终)</span>
+EKF2_AID_MASK(bit1) → EKF2_OF_CTRL  <span class="comment"># 光流 (0=禁用,1=启用)</span></code></pre>
+                <p style="margin-top:8px;">
+                    <strong>后果</strong>: 全部失败 → PX4用默认值(GPS高度+无光流) → 大棚无GPS → 无法起飞!<br>
+                    <strong>修复</strong>: configure_ekf2.py 完全重写:
+                    (1) 新旧参数名双尝试 (2) 参数就绪检测 (3) 重试机制 (4) 新增EKF2_OF_CTRL独立光流开关
+                </p>
+            </div>
+
+            <div class="warning">
+                <h4>A*路径规划慢 + 失败 (第十九次优化) ★</h4>
+                <p><strong>现象</strong>: 2D导航规划航线耗时长, 有时A*找不到路径<br>
+                    <strong>原因</strong>:
+                </p>
+                <ul style="margin-left:20px;margin-top:5px;">
+                    <li>地图 1132×408 (分辨率0.05m) 搜索空间大</li>
+                    <li>Python A*比C++慢50~100倍</li>
+                    <li>旧碰撞检测: 每扩展1节点检查~113栅格 (O(n²)循环)</li>
+                </ul>
+                <p style="margin-top:8px;"><strong>优化</strong>:
+                    预膨胀障碍物 (scipy.ndimage), 碰撞检测从O(n²)降为O(1)查表, 速度提升10~50倍。
+                    max_iter: 100k→500k, 搜索半径: 50→100。
+                </p>
+            </div>
+
+            <h2 id="time-sync">⏱️ 时间同步机制 (第十九次新增)</h2>
+            <div class="warning">
+                <h4>仿真环境中的时间同步</h4>
+                <p><strong>硬件同步</strong>: Gazebo单时钟引擎, 所有传感器共享仿真时间, 天然同步无漂移<br>
+                    <strong>软件同步</strong>: PX4-SITL设置 <code>/use_sim_time=true</code>, rospy.Time.now()返回仿真时钟<br>
+                    <strong>FAST-LIO2</strong>: <code>time_sync_en=false</code> (仿真无需, 时间戳已对齐)<br>
+                    <strong>数据流时间戳</strong>: nan_filter.py 保留原始header.stamp, slam_to_mavros.py转发SLAM时间戳
+                </p>
+                <pre><code><span class="comment"># 真机部署时需要的额外配置:</span>
+<span class="comment"># 1. FAST-LIO2: time_sync_en → true (LiDAR-IMU时钟对齐)</span>
+<span class="comment"># 2. time_offset_lidar_to_imu: 标定实际偏差值</span>
+<span class="comment"># 3. 相机: 需设置外触发或软件同步</span>
+<span class="comment"># 4. MTF-01P光流: PX4驱动自动同步, 无需额外配置</span></code></pre>
+            </div>
+
+            <h2 id="sensor-layout">传感器布局 (第十一次更新)</h2>
+            <div class="warning">
+                <h4>iris_rgbd_lidar 无人机传感器清单</h4>
+                <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+                    <tr style="border-bottom: 1px solid #30363d;">
+                        <th style="text-align:left; padding: 8px; color: #58a6ff;">位置</th>
+                        <th style="text-align:left; padding: 8px; color: #58a6ff;">传感器</th>
+                        <th style="text-align:left; padding: 8px; color: #58a6ff;">功能</th>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #21262d;">
+                        <td style="padding: 6px;">顶部</td>
+                        <td style="padding: 6px;">Mid360 3D LiDAR (360°×32线, 10Hz)</td>
+                        <td style="padding: 6px;">Fast-LIO2 SLAM + OctoMap 建图</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #21262d;">
+                        <td style="padding: 6px;">前方</td>
+                        <td style="padding: 6px;">RGB-D 深度相机 (320×240, 10fps)</td>
+                        <td style="padding: 6px;">深度图 + 彩色图像</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #21262d;">
+                        <td style="padding: 6px;">底部 ★</td>
+                        <td style="padding: 6px;">激光测距仪 (1D, 50Hz, 0-8m)</td>
+                        <td style="padding: 6px;">PX4 EKF2 精确定高 (替代气压计)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px;">底部 ★</td>
+                        <td style="padding: 6px;">PX4Flow 光流 (64×64, 20Hz)</td>
+                        <td style="padding: 6px;">PX4 EKF2 室内水平定位</td>
+                    </tr>
+                </table>
+                <p style="margin-top: 10px;">
+                    <strong>工作分工</strong>: EKF2 (测距仪+光流) 负责飞控底层的高度/位置保持;
+                    Fast-LIO2 (3D LiDAR) 独立负责地图构建和路径规划。两者互补, 互不冲突。
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // 导航高亮
+        document.addEventListener('scroll', function () {
+            const sections = document.querySelectorAll('h1[id], h2[id]');
+            const links = document.querySelectorAll('nav a');
+            let current = '';
+            sections.forEach(section => {
+                if (window.scrollY >= section.offsetTop - 100) {
+                    current = section.id;
+                }
+            });
+            links.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+
+</body>
+
+</html>

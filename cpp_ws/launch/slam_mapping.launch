@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<launch>
+    <!--
+        SLAM 建图启动文件 (C++版)
+        Fast-LIO2 + NaN过滤(C++) + OctoMap + RViz
+    -->
+
+    <!-- Fast-LIO2 -->
+    <rosparam command="load" file="$(find mak4_sim_cpp)/config/fastlio_sim_mid360.yaml" />
+    <param name="feature_extract_enable" type="bool" value="0"/>
+    <param name="point_filter_num" type="int" value="2"/>
+    <param name="max_iteration" type="int" value="4"/>
+    <param name="filter_size_surf" type="double" value="0.15"/>
+    <param name="filter_size_map" type="double" value="0.15"/>
+    <param name="cube_side_length" type="double" value="500"/>
+    <param name="runtime_pos_log_enable" type="bool" value="0"/>
+    <node pkg="fast_lio" type="fastlio_mapping" name="laserMapping" output="screen"/>
+
+    <!-- NaN过滤 (C++) -->
+    <node pkg="mak4_sim_cpp" type="nan_filter_node" name="nan_filter" output="screen"/>
+
+    <!-- 点云降频 -->
+    <node pkg="topic_tools" type="throttle" name="cloud_throttle"
+          args="messages /cloud_filtered 2.0 /cloud_throttled"/>
+
+    <!-- OctoMap Server -->
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen">
+        <param name="resolution" value="0.15"/>
+        <param name="frame_id" value="camera_init"/>
+        <param name="sensor_model/max_range" value="15.0"/>
+        <param name="sensor_model/hit" value="0.9"/>
+        <param name="sensor_model/miss" value="0.47"/>
+        <param name="sensor_model/min" value="0.12"/>
+        <param name="sensor_model/max" value="0.97"/>
+        <param name="occupancy_min_z" value="-5.0"/>
+        <param name="occupancy_max_z" value="20.0"/>
+        <param name="latch" value="false"/>
+        <param name="filter_ground" value="false"/>
+        <remap from="cloud_in" to="/cloud_throttled"/>
+    </node>
+
+    <!-- 静态TF -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_camera_init"
+          args="0 0 0 0 0 0 map camera_init"/>
+
+    <!-- RViz -->
+    <arg name="rviz" default="true"/>
+    <group if="$(arg rviz)">
+        <node pkg="rviz" type="rviz" name="rviz_slam"
+              args="-d $(find mak4_sim_cpp)/config/slam_mapping.rviz" output="screen"/>
+    </group>
+</launch>

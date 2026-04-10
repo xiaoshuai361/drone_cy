@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<launch>
+    <!--
+        2D栅格地图巡检 (C++版)
+        PGM栅格 → A*规划 → 自动巡检
+    -->
+
+    <arg name="map_yaml" default="$(env HOME)/catkin_ws/maps/greenhouse_2d.yaml"/>
+    <arg name="altitude" default="1.0"/>
+    <arg name="speed" default="6.9"/>
+
+    <!-- 静态TF -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="map_to_camera_init"
+          args="0 0 0 0 0 0 map camera_init"/>
+    <node pkg="tf2_ros" type="static_transform_publisher" name="odom_to_map"
+          args="0 0 0 0 0 0 odom map"/>
+
+    <!-- 2D栅格巡检规划器 (C++) -->
+    <node pkg="mak4_sim_cpp" type="grid_map_planner_node" name="grid_map_planner" output="screen"
+          launch-prefix="bash -c 'sleep 2; exec $0 $@' --">
+        <param name="map_yaml" value="$(arg map_yaml)"/>
+        <param name="default_altitude" value="$(arg altitude)"/>
+        <param name="flight_speed" value="$(arg speed)"/>
+        <param name="safety_margin" value="0.3"/>
+        <param name="waypoint_threshold" value="0.5"/>
+    </node>
+
+    <!-- RViz -->
+    <node pkg="rviz" type="rviz" name="rviz_nav2d"
+          args="-d $(find mak4_sim_cpp)/config/navigation_2d.rviz" output="screen"/>
+</launch>

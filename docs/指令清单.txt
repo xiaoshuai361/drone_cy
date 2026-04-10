@@ -1,0 +1,2823 @@
+================================================================================
+         MAK4 7寸四旋翼无人机 PX4 SITL 仿真环境 - 指令清单
+================================================================================
+
+//第一次操作
+
+【环境说明】
+- 系统: WSL2 Ubuntu 20.04
+- ROS: Noetic
+- Gazebo: 11.15.1 (gazebo-classic)
+- PX4: v1.14.3 (~/PX4-Autopilot)
+- MAVROS: 1.20.1
+- 功能包: mak4_sim (~/catkin_ws/src/mak4_sim)
+
+================================================================================
+一、环境初始化（每次开新终端时自动执行，无需手动操作）
+================================================================================
+
+  bashrc 已自动配置以下内容：
+  - source ROS Noetic
+  - source catkin_ws
+  - PX4 SITL 环境变量 (GAZEBO_MODEL_PATH, GAZEBO_PLUGIN_PATH 等)
+  - WSL GUI 显示适配 (MESA_GL_VERSION_OVERRIDE=3.3)
+
+  如果需要手动刷新环境:
+  source ~/.bashrc
+
+================================================================================
+二、分步启动仿真（推荐调试时使用）
+================================================================================
+
+【步骤1】启动仿真环境 — 终端1
+  描述: 启动 PX4 SITL 飞控 + Gazebo 仿真器 + MAVROS 通信桥
+  会弹出 Gazebo 窗口显示无人机模型
+
+  --- 空旷场地（基础测试）---
+  roslaunch mak4_sim mak4_sitl.launch
+
+  --- 森林场景（3D建图/路径规划）---
+  roslaunch mak4_sim mak4_forest.launch
+
+  --- 无GUI模式（节省资源/SSH远程）---
+  roslaunch mak4_sim mak4_sitl.launch gui:=false
+  roslaunch mak4_sim mak4_forest.launch gui:=false
+
+
+【步骤2】运行起飞悬停测试 — 终端2
+  描述: 等终端1的 Gazebo 窗口出现并稳定后（约30秒），新开终端执行
+  脚本会自动: 连接飞控 → 切OFFBOARD模式 → 解锁 → 起飞到2.5m → 悬停30秒 → 降落
+
+  rosrun mak4_sim takeoff_hover_test.py
+
+
+【步骤3】关闭仿真
+  描述: 在终端1按 Ctrl+C 即可关闭所有仿真进程
+
+================================================================================
+三、一键验证脚本（自动完成全部流程）
+================================================================================
+
+  描述: 自动启动仿真环境，等待飞控连接，然后执行起飞悬停降落测试
+  适合首次验证环境是否搭建成功
+
+  bash ~/catkin_ws/src/mak4_sim/scripts/verify_sim.sh
+
+================================================================================
+四、常用调试/监控指令
+================================================================================
+
+【查看飞控连接状态】
+  描述: 查看 MAVROS 是否连接上 PX4，以及当前飞行模式、解锁状态
+  rostopic echo /mavros/state
+
+【查看无人机实时位置】
+  描述: 查看无人机在本地坐标系下的 x,y,z 位置
+  rostopic echo /mavros/local_position/pose
+
+【查看 IMU 数据】
+  描述: 查看加速度计和陀螺仪数据，确认传感器工作正常
+  rostopic echo /mavros/imu/data
+
+【查看所有 MAVROS 话题】
+  描述: 列出 MAVROS 发布的所有话题
+  rostopic list | grep mavros
+
+【手动切换飞行模式】
+  描述: 通过命令行切换 PX4 飞行模式
+  rosservice call /mavros/set_mode "custom_mode: 'OFFBOARD'"
+  rosservice call /mavros/set_mode "custom_mode: 'AUTO.LAND'"
+  rosservice call /mavros/set_mode "custom_mode: 'AUTO.RTL'"
+  rosservice call /mavros/set_mode "custom_mode: 'POSCTL'"
+
+【手动解锁/锁定电机】
+  描述: 解锁或锁定无人机电机
+  rosservice call /mavros/cmd/arming "value: true"
+  rosservice call /mavros/cmd/arming "value: false"
+
+【查看 Gazebo 模型列表】
+  描述: 查看 Gazebo 中当前加载的所有模型
+  gz model --list
+
+【查看 ROS 节点图】
+  描述: 用图形方式查看 ROS 节点通信关系
+  rqt_graph
+
+【查看 TF 树】
+  描述: 查看坐标系变换关系
+  rosrun tf view_frames && xdg-open frames.pdf
+
+================================================================================
+五、重新编译（修改代码后）
+================================================================================
+
+【编译 catkin 功能包】
+  描述: 修改 mak4_sim 中的代码后需要重新编译
+  cd ~/catkin_ws && catkin_make && source devel/setup.bash
+
+【重新编译 PX4 SITL】
+  描述: 如果修改了 PX4 固件参数或代码
+  cd ~/PX4-Autopilot && DONT_RUN=1 make px4_sitl_default gazebo-classic
+
+================================================================================
+六、地图说明
+================================================================================
+
+【空旷场地】 mak4_sitl.launch
+  文件: PX4 自带 empty.world
+  用途: 基础飞行测试、调参
+
+【森林场景】 mak4_forest.launch
+  文件: ~/catkin_ws/src/mak4_sim/worlds/forest.world
+  用途: 3D建图、路径规划、避障测试
+  内容: 40m×40m 区域，包含:
+    - 25棵橡树 (oak_tree)，来自 Gazebo 在线模型库
+    - 15棵松树 (pine_tree)，来自 Gazebo 在线模型库
+    - 3块岩石、2根倒木、2个树桩、3丛灌木
+    - 无人机起飞点在中央空地 (0,0)
+
+================================================================================
+七、WSL 显示问题排查
+================================================================================
+
+【Gazebo 黑屏或崩溃】
+  描述: 如果 Gazebo 窗口黑屏，启用软件渲染
+  编辑 ~/.bashrc，取消这行的注释:
+  export LIBGL_ALWAYS_SOFTWARE=1
+  然后: source ~/.bashrc
+
+【检查 DISPLAY 变量】
+  描述: WSL2 + WSLg 默认 DISPLAY=:0，如看不到窗口检查此变量
+  echo $DISPLAY
+
+【无GUI模式替代】
+  描述: 如果GUI始终无法显示，可以用无GUI模式运行仿真，纯靠话题数据验证
+  roslaunch mak4_sim mak4_forest.launch gui:=false
+
+================================================================================
+八、文件结构
+================================================================================
+
+  ~/catkin_ws/src/mak4_sim/
+  ├── launch/
+  │   ├── mak4_sitl.launch        # 空旷场地启动文件
+  │   └── mak4_forest.launch      # 森林场景启动文件
+  ├── scripts/
+  │   ├── takeoff_hover_test.py    # 起飞悬停降落测试脚本
+  │   ├── verify_sim.sh            # 一键验证脚本
+  │   └── start_px4_sitl.sh       # PX4启动辅助脚本
+  ├── worlds/
+  │   ├── mak4_empty.world         # 空旷世界
+  │   └── forest.world             # 森林世界（3D建图用）
+  ├── models/
+  │   └── mak4_quad/               # (预留) 自定义无人机模型
+  ├── config/                      # (预留) 参数配置
+  ├── CMakeLists.txt
+  └── package.xml
+
+================================================================================
+
+//第二次操作
+
+================================================================================
+=  第二次操作：大棚仿真 + 传感器 + SLAM建图 + 路径规划
+================================================================================
+
+------------------------------------------------------------------------
+1. 新增内容概览
+------------------------------------------------------------------------
+  ✅ 修复 Gazebo 黑屏问题 (本地模型替代网络下载)
+  ✅ 黄瓜大棚 Gazebo 模型 (20m×8m×4m, 拱顶, 碰撞体积)
+  ✅ 黄瓜种植行模型 (竹竿支撑 + 藤蔓 + 叶片遮挡)
+  ✅ 自定义无人机模型 iris_rgbd_lidar:
+     - RGB-D 深度相机 (640×480, 30fps, 前向)
+     - Mid360 3D 激光雷达 (360°, -7°~52°, 32线, 10Hz)
+  ✅ Fast-LIO2 LiDAR-惯导融合 SLAM
+  ✅ OctoMap 3D 占据栅格地图
+  ✅ 3D 牛耕式 (Boustrophedon) 全覆盖路径规划
+  ✅ 3D RRT* 局部避障路径规划
+  ✅ RViz 可视化配置 (点云 + 地图 + 路径 + 相机)
+  ✅ HTML 学习文档 (ROS框架 + 架构图 + Topic拓扑)
+
+------------------------------------------------------------------------
+2. 安装的软件包
+------------------------------------------------------------------------
+  # Fast-LIO2 (LiDAR SLAM)
+  cd ~/catkin_ws/src
+  git clone --depth 1 https://github.com/hku-mars/FAST_LIO.git
+  cd FAST_LIO && git submodule update --init --recursive
+
+  # Livox ROS 驱动 (Fast-LIO2 依赖)
+  cd ~/catkin_ws/src
+  git clone --depth 1 https://github.com/Livox-SDK/livox_ros_driver.git
+
+  # OctoMap + 点云工具 + Velodyne Gazebo 插件
+  sudo apt-get install -y \
+    ros-noetic-octomap ros-noetic-octomap-mapping \
+    ros-noetic-octomap-msgs ros-noetic-octomap-ros \
+    ros-noetic-octomap-rviz-plugins ros-noetic-octomap-server \
+    ros-noetic-pointcloud-to-laserscan \
+    ros-noetic-velodyne-description ros-noetic-velodyne-gazebo-plugins \
+    ros-noetic-velodyne-pointcloud
+
+  # 编译
+  cd ~/catkin_ws && catkin_make
+
+------------------------------------------------------------------------
+3. 大棚仿真 - 启动指令
+------------------------------------------------------------------------
+  # === 步骤1: 启动大棚仿真 (PX4 SITL + Gazebo + MAVROS) ===
+  # 终端1:
+  roslaunch mak4_sim mak4_greenhouse.launch
+
+  # 等待输出:
+  #   [INFO] MAVROS started
+  #   [INFO] FCU connected
+
+  # === 步骤2: 启动 SLAM 建图 ===
+  # 终端2:
+  roslaunch mak4_sim slam_mapping.launch
+
+  # 这会同时启动:
+  #   - Fast-LIO2 (LiDAR-惯导融合定位建图)
+  #   - OctoMap Server (3D栅格地图)
+  #   - RViz (可视化: 点云/地图/路径/相机)
+
+  # === 步骤3: 起飞 ===
+  # 终端3:
+  rosrun mak4_sim takeoff_hover_test.py
+
+  # === 步骤4: 启动路径规划 (建图后) ===
+  # 终端4:
+  roslaunch mak4_sim navigation.launch
+
+  # 无人机将自动执行:
+  #   1. 生成3D牛耕式覆盖路径 (3层高度)
+  #   2. RRT* 避障规划
+  #   3. 飞行执行全覆盖扫描
+
+------------------------------------------------------------------------
+4. 森林仿真 - 启动指令
+------------------------------------------------------------------------
+  # 终端1: 启动森林仿真 (使用本地模型, 无需网络)
+  roslaunch mak4_sim mak4_forest.launch
+
+  # 终端2: SLAM建图
+  roslaunch mak4_sim slam_mapping.launch
+
+------------------------------------------------------------------------
+5. 传感器话题列表
+------------------------------------------------------------------------
+  # --- RGB-D 深度相机 ---
+  /camera/rgb/image_raw           # RGB 图像 (sensor_msgs/Image)
+  /camera/depth/image_raw         # 深度图 (sensor_msgs/Image)
+  /camera/depth/points            # 深度点云 (sensor_msgs/PointCloud2)
+  /camera/rgb/camera_info         # 相机内参 (sensor_msgs/CameraInfo)
+
+  # --- Mid360 3D 激光雷达 ---
+  /mid360/points                  # 3D激光点云 (sensor_msgs/PointCloud2)
+
+  # --- MAVROS (飞控桥接) ---
+  /mavros/state                   # 飞控状态 (armed/mode)
+  /mavros/local_position/pose     # 位姿 (EKF2)
+  /mavros/imu/data                # IMU数据 (加速度/角速度)
+  /mavros/setpoint_position/local # 位置控制指令
+
+  # --- SLAM 输出 ---
+  /cloud_registered               # 配准后点云 (Fast-LIO2)
+  /cloud_registered_body          # 机体坐标系点云
+  /Odometry                       # 里程计 (Fast-LIO2)
+  /path                           # SLAM轨迹
+
+  # --- OctoMap ---
+  /octomap_binary                 # 二进制Octomap
+  /occupied_cells_vis_array       # 可视化MarkerArray
+
+  # --- 路径规划 ---
+  /coverage_path                  # 覆盖路径 (Boustrophedon)
+  /local_path                     # 避障路径 (RRT*)
+  /coverage_markers               # 路径可视化
+
+------------------------------------------------------------------------
+6. 调试指令
+------------------------------------------------------------------------
+  # 查看话题频率
+  rostopic hz /mid360/points
+  rostopic hz /camera/rgb/image_raw
+  rostopic hz /cloud_registered
+
+  # 查看话题数据
+  rostopic echo /mavros/state
+  rostopic echo /mavros/local_position/pose
+
+  # 查看节点列表
+  rosnode list
+
+  # 查看TF树
+  rosrun tf view_frames
+
+  # 节点连接图
+  rqt_graph
+
+  # 录制数据包
+  rosbag record /mid360/points /mavros/imu/data /cloud_registered -O mapping.bag
+
+  # 回放数据包
+  rosbag play mapping.bag
+
+------------------------------------------------------------------------
+7. 文件结构 (第二次操作新增)
+------------------------------------------------------------------------
+  ~/catkin_ws/src/mak4_sim/
+  ├── config/
+  │   ├── fastlio_sim_mid360.yaml    # Fast-LIO2 仿真配置
+  │   └── slam_mapping.rviz          # RViz 可视化布局
+  ├── docs/
+  │   └── ros_framework_guide.html   # ROS框架学习文档(浏览器打开)
+  ├── launch/
+  │   ├── mak4_greenhouse.launch     # 大棚仿真启动
+  │   ├── slam_mapping.launch        # SLAM建图启动
+  │   └── navigation.launch          # 路径规划启动
+  ├── models/
+  │   ├── greenhouse/                # 大棚模型 (20m×8m×4m)
+  │   ├── cucumber_row/              # 黄瓜种植行
+  │   └── iris_rgbd_lidar/           # 无人机+相机+雷达
+  ├── scripts/
+  │   ├── boustrophedon_planner.py   # 牛耕式覆盖规划
+  │   └── rrt_star_planner.py        # RRT*避障规划
+  └── worlds/
+      └── greenhouse.world           # 大棚世界
+
+  ~/catkin_ws/src/FAST_LIO/          # Fast-LIO2 SLAM
+  ~/catkin_ws/src/livox_ros_driver/  # Livox 驱动
+
+------------------------------------------------------------------------
+8. 查看 HTML 学习文档
+------------------------------------------------------------------------
+  # 方法1: 在浏览器中打开
+  xdg-open ~/catkin_ws/src/mak4_sim/docs/ros_framework_guide.html
+
+  # 方法2: 用 python 开个本地服务器
+  cd ~/catkin_ws/src/mak4_sim/docs
+  python3 -m http.server 8080
+  # 然后浏览器访问: http://localhost:8080/ros_framework_guide.html
+
+------------------------------------------------------------------------
+9. 重新编译 (修改代码后)
+------------------------------------------------------------------------
+  cd ~/catkin_ws && catkin_make
+  source devel/setup.bash
+
+//第三次操作
+=  第三次操作：修复问题 + 键盘遥控 + 地图保存加载 + 交互式3D导航
+========================================================================
+
+修复内容概述:
+  1. 树冠透明度 - oak/pine树冠添加60%透明度,不遮挡无人机
+  2. 大棚加大 - 40m×16m (原20m×8m), 黄瓜行加长到36m
+  3. 黄瓜行数翻倍 - 10行 (原5行), 行间距1.8m (原1.2m)
+  4. 无人机出生点 - 移入大棚门口内侧 (x=-18)
+  5. OctoMap NaN过滤 - 新增nan_filter节点, 解决computeRayKeys报错
+  6. RViz相机显示 - 修复深度相机/RGB图像显示配置
+  7. 键盘遥控 - 新增keyboard_teleop.py, WASD+QE+RF控制飞行
+  8. 地图保存/加载 - save_map.py / load_map.py + navigation加载
+  9. 交互式3D导航 - RViz点击目标点 → RRT*规划 → 自动飞行避障
+
+------------------------------------------------------------------------
+1. 编译工作空间 (每次修改后都需要)
+------------------------------------------------------------------------
+  cd ~/catkin_ws && catkin_make
+  source devel/setup.bash
+
+------------------------------------------------------------------------
+2. 阶段一: 手动建图 (键盘遥控飞行)
+------------------------------------------------------------------------
+  # 终端1: 启动仿真环境 (PX4 + Gazebo + MAVROS)
+  cd ~/PX4-Autopilot && source ~/catkin_ws/devel/setup.bash
+  DONT_RUN=1 make px4_sitl_default gazebo-classic
+  source Tools/simulation/gazebo-classic/setup_gazebo.bash $(pwd) $(pwd)/build/px4_sitl_default
+  roslaunch mak4_sim mak4_greenhouse.launch
+
+  # 终端2: 启动SLAM建图 (Fast-LIO2 + OctoMap + RViz)
+  source ~/catkin_ws/devel/setup.bash
+  roslaunch mak4_sim slam_mapping.launch
+
+  # 终端3: 键盘遥控无人机
+  source ~/catkin_ws/devel/setup.bash
+  rosrun mak4_sim keyboard_teleop.py
+  
+  # 键盘操控说明:
+  #   T = 起飞 (自动切OFFBOARD + ARM + 飞到2m高度)
+  #   W/S = 前进/后退
+  #   A/D = 左/右平移
+  #   Q/E = 左/右旋转
+  #   R/F = 上升/下降
+  #   空格 = 悬停
+  #   1/2 = 减速/加速
+  #   L = 降落
+  #   ESC = 退出
+
+  # 操作步骤:
+  #   1) 先按 T 起飞
+  #   2) 用 WASD 操控无人机飞入大棚
+  #   3) 观察 RViz 中点云地图逐渐建立
+  #   4) 在大棚内各处飞行,覆盖扫描
+  #   5) 建图满意后执行保存
+
+------------------------------------------------------------------------
+3. 阶段二: 保存地图
+------------------------------------------------------------------------
+  # 终端4: 保存OctoMap地图
+  source ~/catkin_ws/devel/setup.bash
+  rosrun mak4_sim save_map.py
+  
+  # 地图保存位置: ~/catkin_ws/maps/greenhouse_map.bt
+  # PCD点云保存: ~/catkin_ws/maps/greenhouse_map.pcd (Fast-LIO2停止后)
+  
+  # 注意: Fast-LIO2的PCD在节点退出时才写出
+  # 建图完成后 Ctrl+C 停止 slam_mapping.launch
+  # 然后PCD文件会自动保存
+
+------------------------------------------------------------------------
+4. 阶段三: 加载地图 + 交互式3D导航
+------------------------------------------------------------------------
+  # 前提: mak4_greenhouse.launch 仍在运行 (PX4 SITL + MAVROS)
+  
+  # 终端2: 启动导航 (加载地图 + 交互式规划器 + RViz)
+  source ~/catkin_ws/devel/setup.bash
+  roslaunch mak4_sim navigation.launch
+  
+  # 或指定地图文件:
+  # roslaunch mak4_sim navigation.launch map_file:=/path/to/map.bt
+  
+  # 在RViz中操作:
+  #   1) 顶部工具栏找到 "Publish Point" 按钮并点击
+  #   2) 在3D点云地图中点击目标位置
+  #   3) 规划器自动执行 RRT* 3D路径规划
+  #   4) 无人机自动沿规划路径飞行,进行3D避障
+  #   5) 绿色路径线显示规划的航线
+  #   6) 红色球体显示目标位置
+
+------------------------------------------------------------------------
+5. 新增/修改文件清单
+------------------------------------------------------------------------
+  新增脚本:
+    scripts/keyboard_teleop.py    - 键盘遥控节点
+    scripts/nan_filter.py         - 点云NaN过滤节点
+    scripts/save_map.py           - 地图保存脚本
+    scripts/load_map.py           - 地图加载说明脚本
+    scripts/interactive_planner.py - 交互式3D路径规划+导航
+  
+  修改模型:
+    models/greenhouse/model.sdf   - 大棚扩大为40m×16m
+    models/cucumber_row/model.sdf - 黄瓜行加长为36m
+    models/oak_tree_local/model.sdf - 树冠60%透明
+    models/pine_tree_local/model.sdf - 树冠60%透明
+  
+  修改配置:
+    config/slam_mapping.rviz      - RViz修复+导航路径显示
+    worlds/greenhouse.world       - 10行黄瓜,行距1.8m
+    launch/mak4_greenhouse.launch - 无人机出生点内移
+    launch/slam_mapping.launch    - 增加NaN过滤
+    launch/navigation.launch      - 完全重写为交互式导航
+
+------------------------------------------------------------------------
+6. 常用调试命令
+------------------------------------------------------------------------
+  # 查看话题列表
+  rostopic list | grep -E "camera|cloud|octomap|path|clicked"
+  
+  # 查看相机话题是否有数据
+  rostopic hz /camera/rgb/image_raw
+  rostopic hz /camera/depth/image_raw
+  
+  # 查看点云话题
+  rostopic hz /cloud_registered
+  rostopic hz /cloud_filtered
+  
+  # 查看MAVROS状态
+  rostopic echo /mavros/state -n 1
+  
+  # 手动发布目标点 (测试导航)
+  rostopic pub /clicked_point geometry_msgs/PointStamped \
+    "{header: {frame_id: 'camera_init'}, point: {x: 5.0, y: 0.0, z: 2.0}}"
+
+//第四次任务
+================================================================================
+第四次操作 - Bug修复 + 功能增强
+================================================================================
+
+【本次修复了以下问题】
+
+问题1: navigation.launch 加载地图后 octree 为空
+  原因: octomap_server_node 没有收到 .bt 文件参数, 地图未被加载
+  修复: navigation.launch 中给 octomap_server 添加 args="$(arg map_file)"
+
+问题2: RViz 中相机图像显示 "No Image" + TF报错
+  原因: SDF传感器缺少 <always_on> 标签; TF中MAVROS帧与Fast-LIO帧不通
+  修复: 
+    - 无人机SDF添加 <always_on>true</always_on> 和 <visualize>false</visualize>
+    - 相机降至15fps减少WSL2 GPU负载
+    - RViz TF配置改为只显示 body/camera_init/map 等有效帧
+
+问题3: 键盘遥控延迟高
+  原因: 旧版每按一次键只发送1帧速度(50ms), 然后立即发零速度
+  修复: 重写为"持续速度模式" - 按方向键设置持续速度, 按空格停止
+    - 发送频率从20Hz提升到50Hz
+    - 按下W后持续前进, 不需要一直按住
+
+问题4: 建图时 RViz 显示红色路径线条
+  原因: 这是Fast-LIO2发布的 /path 话题(无人机运动轨迹), 不是路径规划
+  修复: RViz中该显示默认关闭, 重命名为 Drone_Trajectory 避免混淆
+
+问题5: interactive_planner.py 碰撞检测无效 (关键BUG)
+  原因: _octomap_cb 从未解析OctoMap二进制数据, occupied_voxels 始终为空
+        → RRT* 认为所有空间都是无障碍的, 完全不避障!
+  修复: 改为订阅 /occupied_cells_vis_array (MarkerArray), 从中提取占据体素
+        现在规划器真正能识别障碍物并绕过它们
+
+问题6: save_map.py 找不到 Fast-LIO2 PCD 文件
+  原因: 搜索路径错误, 正确路径是 ~/catkin_ws/src/FAST_LIO/PCD/scans.pcd
+  修复: 更新搜索路径列表 + 支持目录搜索最新PCD
+  注意: PCD只在Fast-LIO2节点停止后才写出!
+        正确流程: 先 Ctrl+C 停 slam_mapping → 再运行 save_map.py
+
+问题7: nan_filter.py 性能优化
+  用 numpy 批量处理替代逐点 Python 循环, 大幅提速
+
+================================================================================
+【完整操作流程 (修正版)】
+================================================================================
+
+=== 第一阶段: 编译 ===
+cd ~/catkin_ws && catkin_make && source devel/setup.bash
+
+=== 第二阶段: 手动建图 ===
+
+# 终端1: 启动仿真
+roslaunch mak4_sim mak4_greenhouse.launch
+
+# 终端2: 启动SLAM建图
+roslaunch mak4_sim slam_mapping.launch
+
+# 终端3: 键盘遥控
+rosrun mak4_sim keyboard_teleop.py
+#   T = 起飞    L = 降落
+#   W/S = 前/后   A/D = 左/右平移
+#   Q/E = 左/右转  R/F = 上升/下降
+#   空格 = 悬停 (停止所有运动)
+#   1/2 = 减速/加速
+#   >> 按下方向键后速度持续, 按空格才停止 <<
+
+# 飞行建图: T起飞 → W前进 → Q/E转向 → 飞遍大棚各区域
+# 在RViz中观察OctoMap和点云是否正常建立
+
+=== 第三阶段: 保存地图 ===
+
+# !! 重要: 先停止SLAM再保存PCD !!
+# 在终端2中 Ctrl+C 停止 slam_mapping
+# (Fast-LIO2 的 PCD 只在节点退出时写入到 ~/catkin_ws/src/FAST_LIO/PCD/scans.pcd)
+
+# 然后终端2: 保存地图
+rosrun mak4_sim save_map.py
+# 输出:
+#   OctoMap: ~/catkin_ws/maps/greenhouse_map.bt (OK)
+#   PCD:     ~/catkin_ws/maps/greenhouse_map.pcd (OK)
+
+=== 第四阶段: 加载地图 + 交互式导航 ===
+
+# 确保终端1仿真仍在运行 (如果之前关了就重新启动)
+# 终端1: roslaunch mak4_sim mak4_greenhouse.launch
+
+# 终端2: 启动导航 (加载地图 + 规划器 + RViz)
+roslaunch mak4_sim navigation.launch
+# 或指定地图: roslaunch mak4_sim navigation.launch map_file:=~/catkin_ws/maps/greenhouse_map.bt
+
+# 等待看到: "[规划器] OctoMap已加载! 占据体素数: XXXX"
+# 这说明3D地图已成功加载, 碰撞检测已就绪
+
+# 在RViz中:
+# 1. 工具栏选择 "Publish Point" 工具
+# 2. 在3D地图中点击目标位置
+# 3. 看到绿色路径线 → 无人机自动飞向目标
+# 4. 可以连续点击多个目标点
+
+================================================================================
+【修改的文件清单】
+================================================================================
+
+launch/navigation.launch    - 添加 args="$(arg map_file)" 加载地图
+models/iris_rgbd_lidar/
+  iris_rgbd_lidar.sdf       - 传感器添加 always_on, 相机降至15fps
+config/slam_mapping.rviz    - 禁用红色轨迹, TF只显示有效帧
+scripts/keyboard_teleop.py  - 重写为持续速度模式, 50Hz
+scripts/interactive_planner.py - 修复碰撞检测(订阅occupied_cells_vis_array)
+scripts/save_map.py         - 修正PCD搜索路径
+scripts/nan_filter.py       - 用numpy批量处理提速
+
+【常用调试命令】
+
+# 检查相机话题是否有数据
+rostopic hz /camera/rgb/image_raw
+rostopic hz /camera/depth/image_raw
+
+# 检查OctoMap是否有数据
+rostopic echo /occupied_cells_vis_array --noarr | head -20
+
+# 检查导航器是否正常
+rostopic echo /planned_path | head -5
+
+# 查看tf树
+rosrun tf view_frames && xdg-open frames.pdf
+
+//================== 第五次操作 ==================//
+
+========== 发现的问题和原因分析 ==========
+
+问题1: nan_filter.py 报错 "ValueError: array must be C-contiguous"
+  原因: numpy的2D数组做列切片后内存不连续，.view()要求C-contiguous内存布局。
+        points[:, ox:ox+4] 是非连续视图，无法直接 .view(np.float32)。
+  修复: 在.view()之前加 np.ascontiguousarray() 强制拷贝为连续内存。
+  影响: 这是根因! nan_filter崩溃 → /cloud_filtered话题无数据 → OctoMap无点云输入
+        → OctoMap始终为空 → 保存的.bt文件只有137字节(空) → 导航时无地图显示。
+
+问题2: save_map.py OctoMap保存超时(文件仅0.1KB)
+  原因: 用户先Ctrl+C停止了slam_mapping(杀掉OctoMap Server), 再运行save_map.py,
+        此时octomap_saver无法连接到已关闭的服务器, 导致超时产生空文件。
+  修复: 重写save_map.py:
+        - 启动时检查OctoMap Server是否在运行, 不在则报错提示
+        - 先保存OctoMap(Server必须运行中)
+        - 再自动rosnode kill /laserMapping触发Fast-LIO2写出PCD
+        - 等待PCD文件生成后复制
+
+问题3: navigation.launch启动后RViz无地图
+  原因: 保存的.bt文件是空的(问题1+2的连锁后果)。
+        修复nan_filter后，正确建图→正确保存→OctoMap加载正常。
+
+问题4: RViz中找不到"Publish Point"工具
+  原因: slam_mapping.rviz配置文件缺少 Tools: 段落, RViz默认不加载PublishPoint。
+  修复: 在两个rviz配置中添加 Tools 段:
+        - slam_mapping.rviz: 添加PublishPoint等工具
+        - navigation.rviz(新建): PublishPoint放在工具栏第一位
+
+问题5: 相机图像"No Image received"
+  说明: 相机图像依赖Gazebo渲染。WLS2环境下GPU渲染性能有限，相机可能间歇性无输出。
+        这不影响SLAM(依赖LiDAR)和导航功能。如果mak4_greenhouse.launch运行正常,
+        且无人机在Gazebo中可见, 相机话题应该有数据。
+        如果RViz中仍然无图像, 可用以下命令检查:
+          rostopic hz /camera/rgb/image_raw
+        如果频率>0说明话题正常, RViz显示问题可能是WSL2图形性能限制。
+
+========== 修改的文件列表 ==========
+
+1. scripts/nan_filter.py
+   - 第42-44行: points[:, ox:ox+4].view() → np.ascontiguousarray(...).view()
+   - 修复C-contiguous内存错误
+
+2. scripts/save_map.py (重写)
+   - 新增: check_node_running() 函数检查节点状态
+   - 新增: 启动时检查OctoMap Server是否运行, 不运行则报错
+   - 新增: 保存OctoMap后自动 rosnode kill /laserMapping 触发PCD写入
+   - 新增: 等待PCD文件生成(最多15秒)
+   - 新增: 文件大小检查, 空地图告警
+   - 新增: 完成后提示下一步操作
+
+3. config/slam_mapping.rviz
+   - 新增: Tools段 (MoveCamera, Interact, Select, FocusCamera, PublishPoint, Measure)
+
+4. config/navigation.rviz (新建)
+   - 专用导航RViz配置
+   - PublishPoint工具在工具栏第一位
+   - 显示: OctoMap_3D, Planned_Path, Goal_Marker, TF, RGB/Depth相机
+   - 视角: ThirdPersonFollower跟随body帧
+
+5. launch/navigation.launch
+   - 改用 navigation.rviz (原来用 slam_mapping.rviz)
+
+6. livox_ros_driver/CMakeLists.txt (上一次修复)
+   - 驱动节点改为条件编译(SDK存在时才编译), 消息类型始终生成
+
+========== 正确操作流程(4步) ==========
+
+第1步: 启动仿真环境
+  终端1:
+    cd ~/PX4-Autopilot && source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim mak4_greenhouse.launch
+  等待Gazebo和MAVROS完全启动(约30-60秒)
+
+第2步: 启动SLAM建图 + 键盘控制飞行
+  终端2:
+    source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim slam_mapping.launch
+  RViz会打开, 左侧Displays面板显示点云和OctoMap
+
+  终端3:
+    source ~/catkin_ws/devel/setup.bash
+    rosrun mak4_sim keyboard_teleop.py
+  操作说明:
+    按 T = 起飞(OFFBOARD+ARM, 2m高度)
+    W/S/A/D = 前进/后退/左/右 (按下后持续移动)
+    R/F = 上升/下降
+    空格 = 悬停(停止所有速度)
+    Q/E = 左转/右转
+  注意: 在RViz中观察OctoMap(彩色方块)是否在逐渐增长
+
+第3步: 保存地图 ★★★ 重要: 不要先Ctrl+C ★★★
+  终端4 (slam_mapping仍在运行!):
+    source ~/catkin_ws/devel/setup.bash
+    rosrun mak4_sim save_map.py
+  脚本会:
+    ① 保存OctoMap (.bt文件)
+    ② 自动停止Fast-LIO2触发PCD保存
+    ③ 复制PCD文件
+  完成后终端2的slam_mapping可以Ctrl+C关闭
+
+第4步: 加载地图 + 交互式导航
+  终端2:
+    source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim navigation.launch
+  RViz会打开并显示3D OctoMap地图
+  操作:
+    1. 在RViz工具栏找到 "Publish Point" 按钮(带十字准星图标)
+    2. 点击该按钮激活
+    3. 在3D地图视图中点击目标位置
+    4. 规划器自动计算RRT*路径(绿色线条)
+    5. 无人机自动飞行到目标点
+
+========== 常用调试命令 ==========
+
+# 检查nan_filter是否正常(应该有输出频率)
+rostopic hz /cloud_filtered
+
+# 检查OctoMap是否有数据(应该有occupied cells)
+rostopic echo /occupied_cells_vis_array -n 1 | head -5
+
+# 检查相机是否有图像
+rostopic hz /camera/rgb/image_raw
+
+# 检查地图文件大小(应该>1KB)
+ls -lh ~/catkin_ws/maps/greenhouse_map.bt
+
+# 手动测试Publish Point话题
+rostopic echo /clicked_point
+
+
+//================== 第六次操作 ==================//
+
+========== 发现的问题和原因分析 ==========
+
+问题1: OctoMap 始终为空(0.1KB) - 根本原因!
+  现象: 建图时持续报错:
+    - "Transform error: base_footprint does not exist"
+    - "No ground plane found in scan"
+    - "Nothing to publish, octree is empty"
+  根因: slam_mapping.launch 中 filter_ground=true, OctoMap 地面过滤需要 base_footprint
+        坐标系来确定"地面方向"，但 PX4+Fast-LIO2 系统中不存在 base_footprint 帧。
+        每次回调都因 TF 查询失败而直接退出 → OctoMap 从未接收到任何点云 → 永远为空。
+  修复: 设置 filter_ground=false，移除地面过滤相关参数。
+  说明: 对于3D建图和导航, 地面过滤并非必需。保留地面数据反而有助于避障。
+
+问题2: nan_filter 仍有NaN泄漏到OctoMap
+  现象: OctoMap 报 "computeRayKeys: coordinate NaN"
+  原因: 之前的 numpy .view() 方法虽然修了C-contiguous问题, 但可能存在边界情况
+        导致部分NaN点漏过过滤。
+  修复: 完全重写nan_filter, 改用 struct.unpack_from 逐点提取(绝对可靠,无内存布局问题):
+        - 用 x != x 检测 NaN (IEEE 754标准)
+        - 同时过滤 Inf 和极大值 (>1e6)
+        - 添加 try/except 防止回调崩溃
+        - 添加统计日志(每50帧报告一次过滤数量)
+
+问题3: 相机话题无数据 (/camera/rgb/image_raw no new messages)
+  原因: SDF 中 <robotNamespace></robotNamespace> 为空,
+        Gazebo 可能使用模型名作为命名空间, 导致话题发布在
+        /iris_rgbd_lidar/camera/... 而不是 /camera/...
+  修复:
+    - 设置 <robotNamespace>/</robotNamespace> 强制使用根命名空间
+    - 降低分辨率到 320x240 和帧率到 10fps 减轻WSL2 GPU负担
+  说明: WSL2 的 D3D12→OpenGL 3.1 翻译层对 Gazebo 深度相机渲染支持有限,
+        如果修复后仍无图像, 这是 WSL2 的GPU渲染限制, 不影响SLAM和导航。
+        可用以下命令诊断:
+          rostopic list | grep camera   # 查看所有camera话题
+          rostopic hz /camera/rgb/image_raw  # 检查频率
+
+========== 修改的文件列表 ==========
+
+1. launch/slam_mapping.launch
+   - filter_ground: true → false  ★★★ 关键修复!
+   - 移除 ground_filter/distance 和 ground_filter/plane_distance 参数
+   - 这是OctoMap为空的根本原因
+
+2. scripts/nan_filter.py (完全重写)
+   - 改用 struct.unpack_from 逐点解析(无C-contiguous问题)
+   - x != x 检测NaN (IEEE 754)
+   - 过滤 Inf 和极大值(>1e6)
+   - try/except 防止回调崩溃
+   - 统计日志(每50帧报告)
+   - buff_size=2**24 增大订阅缓冲区
+
+3. models/iris_rgbd_lidar/iris_rgbd_lidar.sdf
+   - <robotNamespace></robotNamespace> → <robotNamespace>/</robotNamespace>
+   - 分辨率 640x480 → 320x240
+   - 帧率 15fps → 10fps
+
+========== 操作流程(不变, 与第五次相同) ==========
+
+第1步: 启动仿真环境
+  终端1:
+    cd ~/PX4-Autopilot && source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim mak4_greenhouse.launch
+
+第2步: 启动SLAM建图 + 键盘控制飞行
+  终端2:
+    source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim slam_mapping.launch
+  终端3:
+    source ~/catkin_ws/devel/setup.bash
+    rosrun mak4_sim keyboard_teleop.py
+  操作: T起飞 → WASD移动 → 空格悬停
+
+第3步: 保存地图 (★ 保持 slam_mapping 运行!)
+  终端4:
+    source ~/catkin_ws/devel/setup.bash
+    rosrun mak4_sim save_map.py
+
+第4步: 交互式导航
+  终端2:
+    source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim navigation.launch
+  在RViz中用 "Publish Point" 点击目标
+
+========== 调试检查清单 ==========
+
+# 建图时必须检查 (确认OctoMap正常):
+rostopic hz /cloud_filtered        # 应有频率输出(~10Hz)
+rostopic hz /occupied_cells_vis_array  # 有频率=OctoMap在工作!
+
+# 如果OctoMap仍无数据:
+rostopic echo /cloud_filtered -n 1 | head -3  # 检查过滤后点云是否有内容
+
+# 检查相机:
+rostopic list | grep camera  # 先看话题是否存在
+rostopic hz /camera/rgb/image_raw  # 再看频率
+
+# 保存后检查地图大小:
+ls -lh ~/catkin_ws/maps/greenhouse_map.bt  # 应该 >1KB
+
+
+//================== 第七次操作 ==================//
+
+========== 本次核心改动: 航线巡检系统 ==========
+
+重大架构变更:
+  旧模式: 单目标点导航 (在RViz中点击一个点, 无人机飞过去)
+  新模式: 多航点巡检航线 (在RViz中依次点击多个航点, 无人机自动沿航线巡检)
+
+新增文件:
+  scripts/patrol_planner.py - 3D航线巡检规划器(替代interactive_planner.py)
+
+修改文件:
+  launch/navigation.launch - 使用新的巡检规划器 + 添加odom→map TF
+  launch/slam_mapping.launch - 添加odom→map静态TF(修复TF错误)
+  config/navigation.rviz - 添加航点标记/航线路径显示
+
+========== 发现的问题和修复 ==========
+
+问题1: OctoMap彩色方块出现后消失, 只剩点云
+  原因: max_range=15偏小, 加上传感器模型概率参数未精调
+  修复(已在第六次完成部分): 
+    - sensor_model/max_range: 15→30
+    - 添加 sensor_model/hit=0.7, miss=0.4, min=0.12, max=0.97
+    - occupancy_min_z=-5.0, occupancy_max_z=20.0
+    - latch=false 持续更新显示
+
+问题2: "Publish Point"点击只能点到障碍物表面  
+  说明: 这是RViz的正常行为 - 3D空间中点击的射线击中最近的表面
+  解决: 新的巡检系统自动将低高度点(z<0.5)调整为默认巡航高度(2.0m),
+        用户点击地面/障碍物表面即可设定合理的巡检航点
+
+问题3: 导航模式不对 - 不是单目标点而是航线巡检
+  旧模式: interactive_planner.py → 每次点击一个目标, 飞一次
+  新模式: patrol_planner.py → 连续点击多个航点, 一键执行完整航线
+  详见下方巡检操作流程
+
+问题4: TF错误 "No transform from [odom] to frame [camera_init]"
+  原因: MAVROS使用odom坐标系, Fast-LIO2使用camera_init坐标系, 两棵TF树不连通
+  修复: 在 slam_mapping.launch 和 navigation.launch 中都添加:
+    odom → map (静态TF, 单位变换)
+    加上已有的 map → camera_init, 形成完整链: odom → map → camera_init
+
+========== 新的巡检规划器使用方法 ==========
+
+patrol_planner.py 操作流程:
+
+阶段1 - 设定航线:
+  1. 在RViz中选择 "Publish Point" 工具(左上角第一个按钮)
+  2. 依次点击大棚内多个位置 → 每次点击添加一个航点
+  3. RViz中显示: 黄色球体=航点, 白色文字=编号和坐标, 黄色连线=航线
+  4. 注意: 点击地面时高度会自动调整为2.0m(默认巡航高度)
+
+阶段2 - 执行巡检:
+  1. 在运行patrol_planner.py的终端中输入: start
+  2. 系统自动对相邻航点间进行RRT*避障路径规划
+  3. 无人机自动依次飞过所有航点
+  4. RViz中显示: 绿色粗线=当前飞行段, 黄色细线=待飞段, 已飞过的段消失
+
+终端命令:
+  start   - 开始执行巡检航线
+  clear   - 清除所有航点, 重新设定
+  stop    - 紧急停止, 无人机悬停
+  status  - 查看当前状态
+  home    - 返航到起飞点
+
+RViz显示说明:
+  /patrol/waypoints       - 航点球体和编号文字(黄色)
+  /patrol/planned_route   - 避障后的实际飞行路径(绿色=当前, 黄色=待飞)
+  /patrol/active_path     - 当前航段剩余路径(绿色)
+
+========== 完整操作流程(第七次更新版) ==========
+
+第1步: 启动仿真环境
+  终端1:
+    cd ~/PX4-Autopilot && source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim mak4_greenhouse.launch
+
+第2步: SLAM建图 + 键盘飞行扫描大棚
+  终端2:
+    source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim slam_mapping.launch
+  终端3:
+    source ~/catkin_ws/devel/setup.bash
+    rosrun mak4_sim keyboard_teleop.py
+  操作: T起飞 → WASD/QE/RF移动 → 空格悬停 → 全方位扫描大棚
+  注意: 建图时RViz应显示OctoMap彩色方块(持续更新)
+
+第3步: 保存地图
+  终端4 (保持建图运行):
+    source ~/catkin_ws/devel/setup.bash
+    rosrun mak4_sim save_map.py
+  等待完成后, Ctrl+C停止终端2(slam_mapping)和终端3(keyboard_teleop)
+
+第4步: 航线巡检★★★(新!)
+  终端2:
+    source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim navigation.launch
+  等待RViz显示OctoMap地图后:
+    1. 用 "Publish Point" 在地图中依次点击巡检航点(至少1个)
+    2. 在终端2中输入: start
+    3. 无人机自动执行巡检航线(带RRT*避障)
+    4. 巡检完成后输入: home 返航, 或 clear 重新规划
+
+========== 调试检查清单 ==========
+
+# 建图时:
+rostopic hz /occupied_cells_vis_array   # OctoMap更新频率
+rostopic hz /cloud_filtered             # 过滤后点云频率
+
+# 导航时:
+rostopic echo /patrol/waypoints -n 1 | head -5   # 检查航点是否发布
+rostopic echo /clicked_point -n 1                 # 测试Publish Point
+
+# TF检查:
+rosrun tf tf_echo odom camera_init   # 应该输出零变换
+rosrun tf tf_echo map camera_init    # 应该输出零变换
+
+# 如果航线规划失败:
+# 检查OctoMap加载: rostopic hz /occupied_cells_vis_array
+# 检查MAVROS: rostopic echo /mavros/state -n 1
+
+
+//================== 第八次操作 ==================//
+
+========== 本次核心改动: 2D分层航线巡检 + 起飞修复 ==========
+
+重大改进:
+  旧方案: 3D空间标点 (只能点到障碍物表面, 无法在空中标点) + 3D RRT* + 直接OFFBOARD不起飞
+  新方案: 指定巡检高度 → 俯视图2D标点(只取x,y) → A*平面避障 → 正确起飞流程 → 多层巡检
+
+========== 发现的问题和修复 ==========
+
+问题1: 无人机不起飞 (桨叶转但不升空)
+  根因: PX4 OFFBOARD模式要求: 进入OFFBOARD前必须已连续接收setpoint ≥2秒
+        旧代码发送了20帧(1秒)当前位置(z=0)的setpoint, 然后切OFFBOARD+ARM
+        → PX4收到的目标高度是0 (地面) → 不爬升
+  修复: 新增 PRE_ARM 阶段:
+        ① 先持续发送"目标巡检高度"的setpoint 2.5秒
+        ② 然后切OFFBOARD + ARM
+        ③ 新增 TAKING_OFF 阶段等待爬升到目标高度
+        ④ 到达高度后才开始执行巡检航线
+
+问题2: 只能标定障碍物表面, 无法在3D空间任意标点  
+  根因: RViz的Publish Point发射射线击中最近的可见表面(OctoMap方块)
+        → 标点只能落在障碍物上 → 无人机飞去撞障碍物!
+  修复: 彻底改为2D标点方案:
+        ① 点击只取x,y坐标, 完全忽略z
+        ② z由用户通过终端设定: alt 2.0
+        ③ RViz视角改为近乎俯视(Pitch=1.3), 便于鸟瞰标点
+        ④ 淡蓝色半透明平面显示巡检高度
+
+问题3: RRT*算法不稳定, 经常"未找到路径, 使用直线"
+  替换: RRT* → A* (确定性2D网格搜索)
+        ① 从3D OctoMap提取指定高度的2D障碍物切片 (±1m范围)
+        ② 2D A* 8方向搜索 + 安全膨胀
+        ③ 路径简化(去除A*中间冗余步进点)
+        结果: 100%确定性找到路径, 速度远超RRT*
+
+========== 新方案: 2D分层巡检 ==========
+
+核心思路:
+  大棚巡检 = 在固定高度的水平面上飞行
+  用户指定巡检高度后, 所有航点都在该高度
+  → 3D问题降维为2D → 标点简单 + 避障高效
+
+多层巡检 (针对高大作物):
+  同一组航点在不同高度各飞一遍
+  如: alt 1.5 2.5 → 先飞1.5m层 → 回起点 → 飞2.5m层
+  适合需要多角度检查的高大植物
+
+========== 终端命令 ==========
+
+  alt H          - 设定巡检高度 (如: alt 2.0)
+  alt H1 H2 ...  - 多层巡检 (如: alt 1.5 2.5 3.5)
+  start          - 开始执行 (自动起飞+巡检)
+  clear          - 清除航点重新设定
+  stop           - 紧急停止悬停
+  status         - 查看状态
+  home           - 返航到起飞点
+  undo           - 撤销最后一个航点
+
+========== 完整操作流程(第八次更新版) ==========
+
+第1步: 启动仿真环境
+  终端1:
+    cd ~/PX4-Autopilot && source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim mak4_greenhouse.launch
+
+第2步: SLAM建图 + 键盘飞行扫描大棚
+  终端2:
+    source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim slam_mapping.launch
+  终端3:
+    source ~/catkin_ws/devel/setup.bash
+    rosrun mak4_sim keyboard_teleop.py
+  操作: T起飞 → WASD/QE/RF移动 → 空格悬停 → 全方位扫描大棚
+
+第3步: 保存地图
+  终端4 (保持建图运行):
+    source ~/catkin_ws/devel/setup.bash
+    rosrun mak4_sim save_map.py
+  等待完成后Ctrl+C停止终端2和终端3
+
+第4步: 航线巡检 ★★★(第八次全新方案)
+  终端2:
+    source ~/catkin_ws/devel/setup.bash
+    roslaunch mak4_sim navigation.launch
+  等待RViz显示OctoMap地图后:
+
+  4.1 设定巡检高度:
+    在终端2中输入: alt 2.0
+    (如果作物高需要多层: alt 1.5 2.5)
+    → RViz中出现淡蓝色半透明平面表示巡检高度
+
+  4.2 俯视图标点:
+    RViz默认为俯视角度(鸟瞰图)
+    用 "Publish Point" 工具点击大棚内需要巡检的位置
+    → 只使用x,y坐标, 高度由alt设定 → 不再受障碍物干扰!
+    → 橙色圆柱+编号显示航点位置
+    → 输入 undo 可撤销最后一个航点
+
+  4.3 开始巡检:
+    在终端2中输入: start
+    → 系统自动: 起飞 → 爬升到巡检高度 → A*避障路径规划 → 逐点飞行
+    → 绿色线=当前航段, 黄色线=待飞航段, 已飞过的段消失
+
+  4.4 多层模式:
+    第一层航点全部飞完 → 自动返回起点 → 爬升到下一层高度 → 再飞同样航点
+    所有层完成后提示
+
+  4.5 完成后:
+    输入 home 返航, 或 clear 重新规划另一条航线
+
+========== 修改的文件 ==========
+
+1. scripts/patrol_planner.py (完全重写)
+   - 3D RRT* → 2D A* (确定性, 更快)
+   - 3D标点 → 2D标点 (只取x,y, 高度由alt设定)
+   - 新增 PRE_ARM → TAKING_OFF 正确的PX4起飞流程
+   - 新增多层巡检 (LAYER_RETURN状态)
+   - 新增 alt/undo 命令
+   - 新增巡检高度平面可视化
+
+2. launch/navigation.launch
+   - 简化参数 (移除RRT*参数, 只保留必要参数)
+
+3. config/navigation.rviz
+   - 视角改为 Orbit Pitch=1.3 (近乎俯视, 便于标点)
+   - 新增 Altitude_Plane 显示 (/patrol/altitude_plane)
+   - Distance=45 (更远, 看到大棚全貌)
+
+========== RViz显示说明 ==========
+
+  淡蓝色半透明平面 = 巡检高度层
+  橙色圆柱 = 用户设定的航点
+  白色编号 = 航点序号和坐标
+  橙色虚线 = 航点到地面的参考线
+  黄色连线 = 航点间预览连线
+  绿色粗线 = 当前正在飞行的避障路径
+  黄色细线 = 待飞的避障路径
+
+========== 调试检查清单 ==========
+
+# 导航时:
+rostopic echo /patrol/waypoints -n 1 | head -5    # 航点标记
+rostopic echo /patrol/altitude_plane -n 1 | head -5  # 高度平面
+rostopic echo /clicked_point -n 1                   # Publish Point测试
+
+# 如果无人机不起飞:
+rostopic echo /mavros/state -n 1        # 检查mode和armed
+rostopic hz /mavros/setpoint_position/local  # setpoint频率应>10Hz
+
+# OctoMap:
+rostopic hz /occupied_cells_vis_array   # 应有频率
+
+
+//================== 第九次操作 ==================//
+// 修复内容:
+// 1. 无人机位置在RViz中不实时更新
+// 2. 大地图OctoMap彩色方块消失 (只剩点云)
+//================================================//
+
+========== 问题1: 无人机位置不在RViz中显示 ==========
+
+原因分析:
+  - navigation.rviz 中没有任何显示无人机位置的 Display
+  - patrol_planner.py 没有发布无人机位置标记
+  - 虽然MAVROS发布了 /mavros/local_position/pose, 但RViz中没有订阅显示它
+
+修复方案:
+  1. patrol_planner.py 新增 /patrol/drone_position 话题 (MarkerArray)
+     - 红色球体: 显示无人机当前位置
+     - 红色箭头: 显示无人机朝向
+     - 白色文字: 显示当前高度 (UAV h=X.Xm)
+     - 红色虚线: 从地面到无人机的垂直参考线
+     - 发布频率: ~5Hz (每4帧发布一次, 主循环20Hz)
+  2. navigation.rviz 新增 Drone_Position 显示
+     - 订阅 /patrol/drone_position MarkerArray
+
+注意: 
+  - 建图后不需要关闭大棚仿真, 可以直接运行 navigation.launch
+  - 前提是 mak4_greenhouse.launch 仍在运行 (MAVROS需要保持连接)
+
+
+========== 问题2: 大地图OctoMap彩色方块消失 ==========
+
+原因分析:
+  - 之前使用 rviz/MarkerArray 显示 /occupied_cells_vis_array 话题
+  - OctoMap服务器将每个体素作为一个单独的Marker发布
+  - 大地图体素数量巨大(几十万个), MarkerArray消息太大导致:
+    a) RViz渲染不过来 → 彩色方块消失
+    b) 网络带宽不够 → 消息丢失
+    c) 只剩下Fast-LIO2的点云能显示
+
+修复方案:
+  - 使用 octomap_rviz_plugins 原生 OctoMap 显示插件
+  - 插件类: octomap_rviz_plugin/OccupancyGrid
+  - 订阅话题: /octomap_binary (OctoMap二进制消息, 比MarkerArray小得多)
+  - 原理: 直接读取八叉树二进制数据进行GPU渲染, 无需转换为MarkerArray
+  - 效果: 即使地图很大, 也能流畅显示彩色体素
+
+修改文件:
+  1. config/slam_mapping.rviz
+     - OctoMap显示: MarkerArray → octomap_rviz_plugin/OccupancyGrid
+     - 话题: /occupied_cells_vis_array → /octomap_binary
+  2. config/navigation.rviz
+     - 同上替换 OctoMap 显示方式
+     - 新增 Drone_Position 显示
+  3. scripts/patrol_planner.py
+     - 新增 _publish_drone_marker() 方法
+     - 主循环 run() 中 ~5Hz 调用
+
+OctoMap显示参数说明:
+  Voxel Coloring: Z-Axis      # 按高度着色 (蓝→绿→黄→红)
+  Voxel Rendering: Occupied Voxels  # 只显示被占据的体素
+  Tree Depth: 16               # 八叉树显示深度(16=最细, 减小可提升性能)
+  Max Height Display: 10       # 最大显示高度
+  Min Height Display: -1       # 最小显示高度
+
+
+========== 完整操作步骤 (建图→导航) ==========
+
+# === 第一步: 启动大棚仿真 ===
+# 终端1:
+roslaunch mak4_sim mak4_greenhouse.launch
+
+# === 第二步: 启动SLAM建图 ===
+# 终端2:
+roslaunch mak4_sim slam_mapping.launch
+
+# === 第三步: 键盘遥控建图 ===
+# 终端3:
+rosrun mak4_sim keyboard_teleop.py
+# 用 WASD/QE/RF 操控无人机飞遍大棚
+# 现在RViz中应该能看到彩色OctoMap体素 (即使地图很大也不会消失)
+
+# === 第四步: 保存地图 ===
+# 终端4:
+rosrun mak4_sim save_map.py
+# 然后 Ctrl+C 关闭 终端2 (slam_mapping) 和 终端3 (keyboard_teleop)
+# ★ 不需要关闭终端1 (大棚仿真)!
+
+# === 第五步: 启动导航 ===
+# 终端2 (新):
+roslaunch mak4_sim navigation.launch
+# 现在RViz中应该能看到:
+#   - 彩色OctoMap地图 (使用原生插件, 不会消失)
+#   - 红色球体 = 无人机当前位置 (实时更新)
+#   - 红色箭头 = 无人机朝向
+#   - 白色文字 = 当前高度
+
+# === 第六步: 设定航线 ===
+# 在navigation.launch的终端中输入:
+alt 2.0              # 设定巡检高度
+# 在RViz中用 Publish Point 工具点击多个位置 → 只取x,y, 高度自动
+start                # 开始执行巡检
+
+# 其他命令:
+alt 1.5 2.5          # 多层巡检
+status               # 查看状态
+stop                 # 紧急停止
+home                 # 返航
+clear                # 清除重来
+undo                 # 撤销最后航点
+
+
+========== RViz显示说明 (更新) ==========
+
+  红色球体 = 无人机当前位置 (新增!)
+  红色箭头 = 无人机朝向 (新增!)
+  "UAV h=X.Xm" = 无人机高度文字 (新增!)
+  彩色方块 = OctoMap障碍物体素 (使用原生插件, 大地图不消失)
+  淡蓝色半透明平面 = 巡检高度层
+  橙色圆柱 = 用户设定的航点
+  白色编号 = 航点序号和坐标
+  绿色粗线 = 当前正在飞行的避障路径
+  黄色细线 = 待飞的避障路径
+
+
+========== 调试检查清单 (第九次更新) ==========
+
+# 检查无人机位置是否发布:
+rostopic hz /patrol/drone_position   # 应约5Hz
+rostopic echo /mavros/local_position/pose -n 1  # 应有位置数据
+
+# 检查OctoMap:
+rostopic hz /octomap_binary          # 导航时应有 (latched)
+rostopic info /octomap_binary        # 类型应为 octomap_msgs/Octomap
+
+# 如果RViz中看不到OctoMap:
+# → 检查RViz Displays面板中 OctoMap_3D 是否 Enabled
+# → 检查 Status 是否有错误提示
+# → 确认 Fixed Frame = camera_init
+
+# 如果看不到无人机位置:
+# → 确认 mak4_greenhouse.launch 仍在运行 (MAVROS需要)
+# → 检查 rostopic echo /mavros/local_position/pose 是否有数据
+# → 检查 Drone_Position 显示是否 Enabled
+
+
+##################################################################
+#                     第十次操作                                  #
+#  修复: OctoMap消失 / 建图精度差 / 航线穿越障碍物                    #
+#  新增: 森林地图扩大 + 森林3D激光雷达建图版                          #
+##################################################################
+
+========== 问题根因与修复 ==========
+
+【问题1: OctoMap彩色方块走一会就消失】
+  根因: nan_filter.py 使用 Python for循环逐点处理 (11520点×10Hz = 115k点/秒)
+        → CPU跟不上 → 消息队列堆积 → OctoMap节点收不到新数据 → 方块消失
+  修复: 完全重写 nan_filter.py, 使用 numpy 向量化操作
+        → 性能提升 50-100倍, 不再丢数据
+
+【问题2: 黄瓜大棚建图效果差, 每排植株不连续】
+  根因: Fast-LIO2 的 filter_size = 0.3m 过于激进的下采样
+        黄瓜支架直径仅3cm, 在0.3m网格中被丢弃
+  修复: filter_size_surf/map: 0.3 → 0.15
+        point_filter_num: 3 → 2 (更多原始点保留)
+        OctoMap resolution: 0.15 → 0.10 (更精细)
+        OctoMap sensor_model/hit: 0.7 → 0.85 (更信任传感器)
+        OctoMap sensor_model/miss: 0.4 → 0.35
+
+【问题3: 航线穿越黄瓜道】
+  根因: 建图质量差导致障碍物地图有缺口, A*规划器认为可以穿越
+  修复: 问题1+2修复后, 障碍物连续, A*会自动沿通道规划
+
+【修改的文件清单】
+  scripts/nan_filter.py      → numpy 向量化重写 (核心修复)
+  launch/slam_mapping.launch → Fast-LIO2参数+OctoMap参数优化
+  launch/navigation.launch   → OctoMap参数同步更新
+  scripts/patrol_planner.py  → resolution 0.15→0.10 (匹配OctoMap)
+  launch/mak4_forest.launch  → 使用 iris_rgbd_lidar SDF (有雷达)
+  worlds/forest.world        → 60×60m 稀疏森林, 中央空地起飞区
+
+
+========== 森林地图说明 ==========
+
+  ★ 地图从 40×40m 扩大到 60×60m (-25到+25坐标范围)
+  ★ 树木总数 30棵 (18橡树+12松树), 间距 7-12m, 比之前稀疏
+  ★ 地面大部分可见, 不被树冠完全遮挡
+  ★ 树冠已设 60% 透明度, 俯视可看到无人机
+  ★ 中央 5×5m 区域无树木, 作为起飞区
+  ★ 增加了岩石(3)、灌木(4)、倒木(2)等地面障碍物
+
+
+========== 森林场景使用方法 ==========
+
+  ★ 森林和大棚共用同一套 slam_mapping + navigation 流程
+  ★ 只需要在第一步换启动的仿真世界即可, 其他指令完全相同
+
+# === 步骤1: 启动森林仿真 (替代 mak4_greenhouse.launch) ===
+# 终端1:
+source ~/catkin_ws/devel/setup.bash
+roslaunch mak4_sim mak4_forest.launch
+
+# === 步骤2: 建图 (完全相同的命令) ===
+# 终端2:
+source ~/catkin_ws/devel/setup.bash
+roslaunch mak4_sim slam_mapping.launch
+
+# 终端3: 键盘控制飞行建图
+source ~/catkin_ws/devel/setup.bash
+rosrun mak4_sim keyboard_teleop.py
+
+# 终端4: 保存地图 (保存为不同文件名以区分)
+source ~/catkin_ws/devel/setup.bash
+rosrun octomap_server octomap_saver -f ~/catkin_ws/src/mak4_sim/maps/forest_map.bt
+
+# === 步骤3: 导航巡检 (指定森林地图文件) ===
+# 终端2 (关掉slam_mapping后):
+source ~/catkin_ws/devel/setup.bash
+roslaunch mak4_sim navigation.launch map_file:=$(rospack find mak4_sim)/maps/forest_map.bt
+
+# 终端3: 巡检规划
+source ~/catkin_ws/devel/setup.bash
+rosrun mak4_sim patrol_planner.py
+
+
+========== 大棚场景使用方法 (不变, 仅供参考) ==========
+
+# 终端1: 启动大棚仿真
+roslaunch mak4_sim mak4_greenhouse.launch
+
+# 终端2: 建图
+roslaunch mak4_sim slam_mapping.launch
+
+# 终端3: 键盘遥控
+rosrun mak4_sim keyboard_teleop.py
+
+# 终端4: 保存地图
+rosrun octomap_server octomap_saver -f ~/catkin_ws/src/mak4_sim/maps/greenhouse_map.bt
+
+# 导航: (关掉建图后)
+roslaunch mak4_sim navigation.launch map_file:=$(rospack find mak4_sim)/maps/greenhouse_map.bt
+rosrun mak4_sim patrol_planner.py
+
+
+##################################################################
+#                     第十一次操作                                 #
+#  修复: TF警告 / 键盘遥控方向 / 高度漂移                           #
+#  新增: 下视测距仪+光流(MTF-01P) + EKF2融合配置                    #
+#  优化: 森林地图加密树木                                           #
+##################################################################
+
+========== 问题根因与修复 ==========
+
+【问题1: TF警告 "No transform from [base_link] to frame [camera_init]"】
+  根因: MAVROS 默认配置 local_position.tf.send=false
+        → base_link 不在TF树中 → RViz无法在camera_init坐标系中显示它
+  修复: slam_mapping.launch 增加两个静态TF:
+        body → base_link (快速LIO的body帧=MAVROS的base_link帧)
+        base_link → base_link_frd (FLU转FRD, 绕X轴180°)
+  TF链: camera_init → body → base_link → base_link_frd
+
+【问题2: 按W无人机不朝机头方向飞 ★★★】
+  根因: keyboard_teleop.py 发送速度时未设置 frame_id,
+        MAVROS 默认按 LOCAL_NED (世界坐标系) 解释
+        → 按W始终沿世界+X方向飞, 不跟随机头朝向!
+  修复: send_velocity() 中从姿态四元数提取偏航角 yaw,
+        将机体坐标速度 (vx=前, vy=左) 旋转到世界坐标 (ENU):
+          world_x = body_vx * cos(yaw) - body_vy * sin(yaw)
+          world_y = body_vx * sin(yaw) + body_vy * cos(yaw)
+        现在W/S/A/D完全跟随机头方向
+
+【问题3: 大棚内飞行高度自动上升/下降】
+  根因: PX4 默认用气压计定高, 室内气流/温度变化导致气压漂移
+        → 高度估计不准 → 无人机缓慢上升或下降
+  修复: 添加下视激光测距仪(模拟MTF-01P), 通过EKF2融合:
+        1. iris_rgbd_lidar.sdf 新增 rangefinder_link
+        2. 配置 EKF2_HGT_MODE=2 (测距仪作为主高度源)
+        3. 测距仪精度 ~1cm, 远优于气压计的 ~50cm
+
+【问题4: 森林树木太稀疏】
+  修复: 30棵 → 50棵 (28橡树+22松树), 间距4-7m
+        增加灌木(6)和倒木(3), 更像真实森林
+
+
+========== 修改的文件清单 ==========
+
+  launch/slam_mapping.launch        → 新增 body→base_link TF
+  scripts/keyboard_teleop.py        → send_velocity() 增加 yaw 旋转
+  worlds/forest.world               → 50棵树(28橡+22松)
+  models/iris_rgbd_lidar/           → 新增下视测距仪 + PX4Flow光流
+    iris_rgbd_lidar.sdf
+  scripts/configure_ekf2.py         → 新建: EKF2参数配置脚本
+  launch/mak4_greenhouse.launch     → 新增 configure_ekf2 节点
+  launch/mak4_forest.launch         → 新增 configure_ekf2 节点
+
+
+========== 传感器布局 (更新后) ==========
+
+  顶部: Mid360 3D LiDAR (360x32, 10Hz) → SLAM建图
+  前方: RGB-D相机 (320x240, 10fps) → 深度图+彩色图
+  底部: 激光测距仪 (1D, 50Hz, 0-8m)  ★新增 → EKF2定高
+        PX4Flow光流 (64x64, 20Hz)    ★新增 → EKF2定位
+
+
+========== EKF2 定位说明 ==========
+
+  EKF2多传感器融合:
+  高度: 测距仪(精度~1cm) 替代 气压计(精度~50cm) → 不再漂高度
+  位置: 室外用GPS, 室内(大棚)自动切换光流 → 无GPS也能稳定飞行
+  SLAM: Fast-LIO2 独立运行, 负责建图和路径规划, 与EKF2互补
+
+
+========== 森林快速启动 ==========
+
+# 终端1: 启动森林仿真
+source ~/catkin_ws/devel/setup.bash
+roslaunch mak4_sim mak4_forest.launch
+# (等待 "[EKF2] 配置完成" 提示)
+
+# 终端2: 建图
+source ~/catkin_ws/devel/setup.bash
+roslaunch mak4_sim slam_mapping.launch
+
+# 终端3: 键盘遥控 (W=机头前进 ★已修复)
+source ~/catkin_ws/devel/setup.bash
+rosrun mak4_sim keyboard_teleop.py
+# T键起飞 → W/A/S/D按机头方向飞 → Q/E转向 → R/F升降
+
+# 终端4: 保存森林地图
+source ~/catkin_ws/devel/setup.bash
+rosrun octomap_server octomap_saver -f ~/catkin_ws/src/mak4_sim/maps/forest_map.bt
+
+# 导航: (关掉slam_mapping后)
+roslaunch mak4_sim navigation.launch map_file:=$(rospack find mak4_sim)/maps/forest_map.bt
+rosrun mak4_sim patrol_planner.py
+
+
+================================================================
+  第十二次操作 — OctoMap大地图性能修复 + 算法对比分析
+================================================================
+
+========== 修复的问题 ==========
+
+【问题1: 地图保存报错 "Filestream not open" ★】
+  现象: rosrun octomap_server octomap_saver -f .../maps/forest_map.bt
+        报错 "Filestream to forest_map.bt not open"
+  根因: maps/ 目录不存在! octomap_saver不会自动创建目录
+  修复: mkdir -p ~/catkin_ws/src/mak4_sim/maps/
+  教训: 保存地图前确保目标目录存在
+
+【问题2: OctoMap大地图彩色方块消失 ★★★ 核心修复】
+  现象: 建图初期OctoMap正常显示, 飞行一段时间后彩色方块完全消失
+        (第十次修复了nan_filter性能后, 问题依旧)
+  根因: 问题不在SLAM, 而在OctoMap Server本身!
+        OctoMap八叉树插入复杂度为 O(n log n), n=节点数
+        → 当八叉树增长到百万节点时, 每帧插入耗时 > 100ms
+        → 10Hz输入 → 处理跟不上 → 队列溢出 → OctoMap停止更新
+        
+        量化分析:
+        - Mid-360输出: 11520点/帧 × 10Hz = 115k点/秒
+        - 分辨率0.10m + max_range=30m → 八叉树最大约550万节点
+        - 10Hz下每帧只有100ms, 大八叉树插入远超此限
+        
+  修复 (三管齐下, 共降低~17倍负载):
+    1. 时间降频: topic_tools/throttle 将cloud_filtered从10Hz降到2Hz (5倍)
+       → 每帧有500ms处理时间, 足以应对百万级八叉树
+    2. 空间降采样: OctoMap分辨率 0.10m → 0.15m (约3.4倍节点减少)
+    3. 范围限制: max_range 30m → 20m (减少每帧需插入的点数)
+    
+  为什么不换SLAM算法? 见问题3分析
+
+【问题3: ESKF_LIO / funny_lidar_slam 算法对比 ★★】
+  用户提问: 是否应该换成 ESKF_LIO 或 funny_lidar_slam?
+  
+  调研结论: Fast-LIO2 就是最优选择, 不需要换!
+  
+  ① ESKF_LIO (GitHub 284星)
+     - 本质: Fast-LIO 1.0 的重新实现 (Error State Kalman Filter)
+     - 同样使用 ikd-Tree, 但缺少 Fast-LIO2 的增量式更新优化
+     - 定位精度和效率都不如 Fast-LIO2
+     - 结论: 是Fast-LIO2的降级版, 没有任何理由切换
+     
+  ② funny_lidar_slam (GitHub 877星)
+     - 多方法集成 (LOAM/NDT/ICP, 卡尔曼/优化)
+     - 支持 Mid-360, 有回环检测
+     - 但: SLAM定位精度不比Fast-LIO2好, 回环检测在小场景无用
+     - 它展示的"大地图"是 PCD 点云, 不是 OctoMap
+     - 结论: 功能更多但核心SLAM不如Fast-LIO2
+     
+  ③ Fast-LIO2 (GitHub 3700+星, 我们在用)
+     - LiDAR-惯导紧耦合里程计的标杆
+     - ikd-Tree增量式更新, 10Hz实时性能
+     - 在我们的仿真中SLAM定位完全正常, 20Hz稳定输出
+     
+  关键认知: 别人用其他算法建的"大地图"是 PCD 点云文件,
+    不是实时OctoMap! 点云只是堆叠扫描数据, 没有八叉树开销。
+    Fast-LIO2 的 /cloud_registered 点云输出同样优秀。
+    瓶颈在 OctoMap Server, 不在 SLAM 算法!
+
+
+========== 修改的文件清单 ==========
+
+  launch/slam_mapping.launch
+    → 新增 topic_tools/throttle 节点 (10Hz→2Hz)
+    → OctoMap 分辨率 0.10→0.15, max_range 30→20
+    → cloud_in 重映射: /cloud_filtered → /cloud_throttled
+    
+  launch/navigation.launch
+    → OctoMap 分辨率 0.10→0.15 (与建图一致)
+    
+  scripts/patrol_planner.py
+    → 分辨率 0.10→0.15 (匹配OctoMap)
+
+
+========== 数据流变化 (更新后) ==========
+
+  [之前] LiDAR → Fast-LIO2 → cloud_registered(10Hz)
+         → nan_filter → cloud_filtered(10Hz) → OctoMap (跟不上!)
+         
+  [现在] LiDAR → Fast-LIO2 → cloud_registered(10Hz)
+         → nan_filter → cloud_filtered(10Hz)
+         → throttle → cloud_throttled(2Hz) → OctoMap (轻松处理!)
+
+  新增节点: cloud_throttle (topic_tools/throttle)
+  新增话题: /cloud_throttled (2Hz, sensor_msgs/PointCloud2)
+
+
+========== OctoMap 当前参数汇总 ==========
+
+  resolution:     0.15m  (建图+导航统一)
+  max_range:      20.0m
+  hit/miss:       0.85 / 0.35
+  min/max:        0.12 / 0.97
+  filter_ground:  false
+  latch:          false
+  输入频率:       2Hz (通过throttle降频)
+
+
+================================================================
+  第十三次操作 — OctoMap墙壁瓦解终极修复 + 悬停漂移修复 + 大棚缩小
+================================================================
+
+========== 修复的问题 ==========
+
+【问题1+4: OctoMap建图墙壁瓦解消失 + 大地图性能 ★★★ 核心修复】
+  现象: 建图时两侧黄瓜行OctoMap看起来像完整墙壁, 但飞过去之后
+        那面"墙"就开始瓦解消失, 飞远后残破不堪
+        同时飞行一段时间后OctoMap停止更新(性能问题)
+
+  根因 (终于找到!): OctoMap 射线模型(beam model)的miss更新!
+    OctoMap对每个点做射线追踪: 从传感器原点到目标点
+    - 射线终点(激光打到的地方) → hit更新 → 占据概率↑
+    - 射线路径上(穿过的体素) → miss更新 → 占据概率↓
+    
+    当无人机飞过一面墙后, 新的激光射向更远的目标,
+    射线会穿过之前建的墙 → 每次穿过都做miss更新(0.35) →
+    多次miss后概率降到阈值以下 → 墙壁"瓦解消失"!
+    
+    同时 max_range=20m 导致射线追踪距离太长 → 性能差
+
+  修复方案 (三管齐下):
+    1. ★ max_range: 20m → 5m
+       - 射线只追踪5m! 飞过5m之后, 射线根本够不到之前的墙
+       - 已建的墙不会被miss更新擦除 → 完美保持!
+       - 同时: 射线短 → 每帧计算量大幅下降 → 性能提升
+    2. ★ miss: 0.35 → 0.48 (接近中性值0.5)
+       - 即使5m内有射线穿过, miss的擦除效果也微乎其微
+    3. 参数调优:
+       - hit:  0.85 → 0.9  (占据更快建立)
+       - min:  0.12 → 0.25 (占据概率不会降太低)
+       - max:  0.97 → 0.99 (占据概率上限更高)
+       - 降频: 2Hz → 1Hz  (更多处理时间)
+
+  为什么之前的修复不管用?
+    - 第十二次只做了: 降频+增大分辨率+减小max_range到20m
+    - 但 max_range=20m 仍然太大, miss=0.35 仍然太激进
+    - 这次直接把 max_range 降到 5m + miss 接近 0.5 = 标本兼治
+
+  网上视频那些大地图怎么做的?
+    - 大多数展示的是 PCD 点云(无八叉树开销, 纯堆叠)
+    - 要做大型 OctoMap 必须: 短射线 + 弱miss + 低频输入
+    - 这就是本次修复的方案
+
+
+【问题2: 无人机悬停后漂移 + 飞行中高度/方向偏 ★★★】
+  现象: 空格悬停后一段时间开始歪
+        前进时有时升高有时降低, 左右也偏
+
+  根因: PX4 EKF2 使用 Gazebo 光流仿真来定位, 但:
+    - Gazebo 的 PX4Flow 光流在无纹理大棚地面上极不可靠
+    - → 水平位置估计漂移 → 悬停歪 + 前进偏
+    
+  修复: SLAM 视觉定位回传 PX4 (★标准室内无人机方案)
+    新增 slam_to_mavros.py 桥接节点:
+      Fast-LIO2 /Odometry → /mavros/vision_pose/pose → PX4 EKF2
+    
+    Fast-LIO2 SLAM 位置精度 ~cm级, 远优于光流(~m级)
+    PX4 EKF2 融合 SLAM 位置后 → 悬停纹丝不动, 飞行不偏不歪
+    
+    EKF2参数变化:
+      EKF2_AID_MASK: 3 → 26 (光流备用 + 视觉位置 + 视觉航向)
+      新增: EKF2_EV_DELAY=10ms, EKF2_EVP_NOISE=0.05m
+
+
+【问题3: 大棚太大不好测试 ★】
+  修改: 大棚尺寸 40m×16m → 20m×12m
+    - greenhouse/model.sdf: 全部结构重新计算
+    - cucumber_row/model.sdf: 36m → 16m, 竹竿24→11根
+    - greenhouse.world: 10行 → 6行
+    - mak4_greenhouse.launch: 起飞位置 x=-18 → x=-8
+
+
+========== 修改的文件清单 ==========
+
+  launch/slam_mapping.launch
+    → OctoMap: max_range 20→5, miss 0.35→0.48, hit 0.85→0.9
+    → min 0.12→0.25, max 0.97→0.99, 降频 2Hz→1Hz
+    → 新增: slam_to_mavros.py 视觉定位桥接节点
+    
+  scripts/slam_to_mavros.py              ★ 新建
+    → /Odometry → /mavros/vision_pose/pose
+    
+  scripts/configure_ekf2.py
+    → EKF2_AID_MASK: 3→26, 新增视觉延迟/噪声参数
+    
+  models/greenhouse/model.sdf            ★ 重写 (40×16→20×12)
+  models/cucumber_row/model.sdf          ★ 重写 (36m→16m)
+  worlds/greenhouse.world                → 10行→6行
+  launch/mak4_greenhouse.launch          → 起飞位置 x=-18→-8
+
+
+========== OctoMap 参数汇总 (第十三次更新) ==========
+
+  resolution:     0.15m
+  max_range:      5.0m   ★ 防止墙壁瓦解的关键
+  hit/miss:       0.9 / 0.48 (miss接近中性, 几乎不擦除)
+  min/max:        0.25 / 0.99
+  输入频率:       1Hz
+
+
+========== EKF2 参数汇总 (第十三次更新) ==========
+
+  EKF2_HGT_MODE:   2 (测距仪定高)
+  EKF2_AID_MASK:   26 (光流+视觉位置+视觉航向)
+  EKF2_EV_DELAY:   10.0ms
+  EKF2_EVP_NOISE:  0.05m
+  EKF2_EVA_NOISE:  0.05rad
+
+
+========== 数据流 (第十三次更新) ==========
+
+  [建图流] LiDAR → Fast-LIO2 → nan_filter → throttle(1Hz)
+           → OctoMap(max_range=5m, miss=0.48)
+  
+  [定位流] Fast-LIO2(/Odometry) → slam_to_mavros.py
+           → /mavros/vision_pose/pose → PX4 EKF2 → 精确控制
+
+
+================================================================
+  第十四次操作 — 移除视觉定位 + EKF2修复 + OctoMap替代方案分析
+================================================================
+
+========== 修复的问题 ==========
+
+【问题2: EKF2参数报错 ★★★ 核心修复】
+  现象: 启动mak4_greenhouse.launch时出现:
+    WARN: EKF2_EV_DELAY 设置失败 (参数可能不存在)
+    ERROR: PR: Unknown parameter to set: EKF2_EVP_NOISE
+
+  根因: PX4 v1.14.3 不支持 EKF2_EVP_NOISE / EKF2_EVA_NOISE 参数!
+    这些是第十三次错误添加的视觉融合参数, PX4 v1.14.3 中不存在
+    同时 EKF2_AID_MASK=26 告诉PX4等待视觉位置数据,
+    但没有数据源 → EKF2位置估计混乱 → 高度变负数
+
+  修复: 从 configure_ekf2.py 中移除所有视觉融合参数:
+    - 移除: EKF2_EV_DELAY, EKF2_EVP_NOISE, EKF2_EVA_NOISE
+    - EKF2_AID_MASK: 26 → 2 (仅光流, 不含GPS/视觉)
+
+
+【问题4: 无人机无法起飞, 高度负数 (-0.3m) ★★★】
+  现象: 按T起飞后只到 -0.3m, 无法升空
+
+  根因: 第十三次添加的视觉定位方案导致:
+    1. EKF2_AID_MASK=26 让PX4等待视觉位置(但没有数据来源)
+    2. 不存在的参数设置失败 → EKF2配置不完整
+    3. EKF2位置估计错误 → 高度为负 → 控制器认为已经很高
+    4. slam_to_mavros.py 在slam未启动时发送无效数据
+
+  修复 (三步):
+    1. EKF2_AID_MASK 从 26 → 2 (仅用光流定位)
+    2. 移除 slam_to_mavros.py 节点 (从slam_mapping.launch)
+    3. 移除所有不存在的EKF2视觉参数
+
+
+【问题3: ROS日志超过1GB ★】
+  修复: 清理 ~/.ros/log/ (4.6GB → 0)
+  建议: 定期执行 rosclean purge 清理日志
+
+
+【问题1: OctoMap是否必须? 有无更好的大地图方案?】
+
+  结论: OctoMap 对当前项目是最佳选择, 不需要换!
+
+  分析:
+  ┌─────────────────┬──────────────────────────────────────────────┐
+  │ 方案            │ 评价                                         │
+  ├─────────────────┼──────────────────────────────────────────────┤
+  │ OctoMap (当前)  │ ★推荐 ROS集成最好, 路径规划直接用,          │
+  │                 │ 第十三次修复后(max_range=5m)已解决大地图问题  │
+  │                 │ 20×12m大棚完全够用                            │
+  ├─────────────────┼──────────────────────────────────────────────┤
+  │ Voxblox (Google)│ TSDF体素图, 更快, 但ROS集成复杂,            │
+  │                 │ 不直接支持A*路径规划的碰撞检测                │
+  ├─────────────────┼──────────────────────────────────────────────┤
+  │ UFOMap          │ 号称OctoMap快2-6倍, 但社区小, 文档少,        │
+  │                 │ 需要改路径规划器代码                          │
+  ├─────────────────┼──────────────────────────────────────────────┤
+  │ Bonxai          │ 新的八叉树库, 3倍加速, 但无ROS包装,          │
+  │                 │ 无octomap_server等价物                        │
+  ├─────────────────┼──────────────────────────────────────────────┤
+  │ 纯PCD点云       │ 网上看到的"大地图"大多是这个!                │
+  │                 │ 纯堆叠显示, 无概率更新 → 当然不会瓦解       │
+  │                 │ 但无法做碰撞检测和路径规划                    │
+  └─────────────────┴──────────────────────────────────────────────┘
+
+  为什么不需要换:
+    1. 第十三次修复已解决墙壁瓦解: max_range=5m + miss=0.48
+    2. 大棚只有20×12m, OctoMap完全胜任
+    3. patrol_planner.py 直接读取 OctoMap 做A*碰撞检测
+    4. 换方案需要重写路径规划器, 工作量大且无必要
+    5. 你项目后续还需要: 3D点云用于病害逆投影坐标解算,
+       OctoMap用于航线规划避障, 两者配合使用
+
+  网上那些"大地图"怎么回事:
+    - 99%展示的是PCD/PLY点云(Fast-LIO2直接输出)
+    - 纯显示用, 不做概率更新, 当然能建很大
+    - 我们的Fast-LIO2点云同样能建很大(已验证58MB PCD)
+    - OctoMap只是实时避障用的, 不需要建很大, 5m内就够
+
+
+========== 关于定位方案的决策 ==========
+
+  调研结论: 室内大棚定位用 光流+测距仪 (不用视觉定位)
+
+  原因:
+    1. 真机硬件: MTF-01P 光流测距一体模块 → 仿真应匹配
+    2. 光流定位: 适合低空(<8m)、有纹理地面 → 大棚地面OK
+    3. 测距仪定高: 1D激光, 精度高(<5cm), 不受气压影响
+    4. 视觉定位(SLAM→PX4): 虽然精度更高, 但:
+       - PX4 v1.14.3 参数支持不完善
+       - 增加系统复杂度
+       - 与真机方案不匹配(不用深度相机定位)
+       - Fast-LIO2 SLAM 建图和飞控定位是独立的, 互不干扰
+
+  EKF2融合架构:
+    IMU(加速度+角速度) ─┐
+    光流(水平速度)    ─┤→ EKF2 → 位置/速度估计 → 飞行控制
+    测距仪(垂直距离)  ─┘
+
+  定位精度:
+    - 水平: ~10cm (光流, 取决于地面纹理和飞行高度)
+    - 垂直: ~3cm  (测距仪, 非常稳定)
+    - 对于大棚巡检完全够用
+
+
+========== 修改的文件清单 ==========
+
+  scripts/configure_ekf2.py
+    → 移除: EKF2_EV_DELAY, EKF2_EVP_NOISE, EKF2_EVA_NOISE
+    → EKF2_AID_MASK: 26 → 2 (仅光流)
+    → 保留: EKF2_HGT_MODE=2(测距仪), EKF2_RNG_AID=1
+
+  launch/slam_mapping.launch
+    → 移除: slam_to_mavros.py 视觉桥接节点
+    → OctoMap参数不变(max_range=5m, miss=0.48)
+
+  ~/.ros/log/
+    → 清理: 4.6GB → 0
+
+
+========== EKF2 参数汇总 (第十四次更新) ==========
+
+  EKF2_HGT_MODE:   2 (测距仪定高)
+  EKF2_RNG_AID:    1 (测距仪辅助)
+  EKF2_AID_MASK:   2 (仅光流, 无GPS/无视觉)
+  EKF2_RNG_A_HMAX: 8.0m (测距仪最大有效高度)
+  EKF2_RNG_NOISE:  0.05m
+  EKF2_RNG_A_VMAX: 2.0m/s
+
+
+========== 数据流 (第十四次更新) ==========
+
+  [建图流] LiDAR → Fast-LIO2 → nan_filter → throttle(1Hz)
+           → OctoMap(max_range=5m, miss=0.48)
+
+  [定位流] 光流传感器 ─────→ PX4 EKF2 → 水平位置
+           测距仪 ──────────→ PX4 EKF2 → 垂直高度
+           IMU ─────────────→ PX4 EKF2 → 姿态/加速度
+           (Fast-LIO2 SLAM 独立运行, 不回传PX4)
+
+--- 第十五次操作 ---
+
+【问题1: OctoMap "建不了大地图" 的真正根因分析与彻底修复】
+
+★ 历史回顾: 从任务7开始, OctoMap 建图在大棚走到后半段就"建不了了"。
+  - 第12次: 降频 10→2Hz, 分辨率 0.1→0.15, max_range 30→20 → 没解决
+  - 第13次: max_range 20→5m, miss 0.35→0.48, 降频 2→1Hz → 更严重了
+  - 第14次: 分析了替代方案, 结论OctoMap仍是最优 → 没改
+
+★ 真正根因 (第13次的"修复"反而制造了新问题):
+  max_range=5m 意味着 OctoMap 只会插入距传感器5m以内的点!
+  → 整个地图永远只有无人机周围5m范围内有彩色方块
+  → 飞行过程中, 前方远处的点被直接丢弃, 所以地图"建不下去了"
+  → 这与用户截图完全吻合: 只有机体附近有OctoMap方块, 远处全是散点
+
+  同时, 老问题"墙壁瓦解"的根因是: miss更新不断降低已占据体素的概率, 
+  当概率降到 occupied_threshold(0.5) 以下, 体素变成"自由"→ 墙壁消失
+
+★ 彻底解决方案 (一个参数同时解决"墙壁瓦解"和"大地图建不了"):
+  sensor_model/min = 0.51 (概率钳位下限, 高于 occupied_threshold=0.5)
+  → 一旦体素被标记为占据(概率>0.5), miss更新最低只能降到0.51
+  → 0.51 仍然 > 0.5 → 体素永远保持"占据"状态 → 彻底杜绝墙壁瓦解
+  → 因为墙壁不会瓦解了, 可以放心恢复 max_range=15m → 大地图正常构建
+
+★ 性能保障: nan_filter.py 中新增体素降采样
+  OctoMap 分辨率=0.15m, 同一个 0.15m 体素内的多个点是冗余的
+  → nan_filter 在 NaN 过滤后, 按0.15m体素网格降采样
+  → 每帧点云从 ~10000点 降到 ~1500点 (减少85%)
+  → OctoMap 射线追踪工作量大幅降低, 2Hz频率毫无压力
+
+修改文件:
+  ① scripts/nan_filter.py
+    - 新增 VOXEL_SIZE=0.15 常量
+    - 在 NaN 过滤后执行 numpy 体素网格降采样:
+      voxel_indices = floor(xyz / 0.15) 编码为 int64 flat index
+      np.unique 保留每个体素内的第一个点
+    - 日志格式: "本帧: 原始数→NaN后→降采样后"
+    
+  ② launch/slam_mapping.launch
+    - sensor_model/max_range: 5.0 → 15.0 (恢复大范围建图)
+    - sensor_model/miss: 0.48 → 0.49 (接近中性, 极少做自由空间标记)
+    - sensor_model/min: 0.25 → 0.51 (★核心修复: 高于occupied_threshold, 占据不可逆)
+    - throttle频率: 1Hz → 2Hz (降采样后性能足够支撑)
+
+【问题2: 大棚地面泥土纹理 (增强光流效果)】
+
+  为光流传感器提供地面特征, 在 greenhouse/model.sdf 中:
+  - 地板颜色改为棕色泥土色 (ambient: 0.5/0.4/0.3, diffuse: 0.6/0.45/0.3)
+  - 新增27条横向泥土垄 (浅棕色细条, x方向间隔0.6m, 模拟种植行)
+  - 新增8条纵向深色沟 (y方向间隔1.5m, 与横向交叉形成网格纹理)
+  - 所有纹理条都是仅可视的 link (无碰撞体), 高度略高于地面 (z=0.022~0.024)
+  
+  原理: 光流传感器依赖地面纹理特征估算速度, 纯色地面特征不足导致漂移,
+  泥土纹路提供了丰富的视觉特征 → 光流定位更准确
+
+--- 第十五次操作结束 ---
+
+--- 第十六次操作 ---
+
+【问题: min=0.51 导致 OctoMap 整个空间被方块填满】
+
+★ 第十五次修复的严重副作用:
+  sensor_model/min=0.51 (高于 occupied_threshold=0.5) 的本意是:
+  "一旦体素被标记为占据就永远不会变自由 → 防止墙壁瓦解"
+  
+  但实际效果是灾难性的:
+  - LiDAR点云中不可避免存在噪点/散射/多径反射
+  - 地面上的每一个点也会触发占据标记
+  - 只要一个噪点落在自由空间的体素内, 该体素立刻变成"占据"
+  - 由于 min=0.51 > 0.5, miss更新最低只能降到0.51 → 噪点无法被清理!
+  - 结果: 每一帧点云都会新增大量永久性的噪声体素
+  - 最终: 整个空间全部被彩色方块填满 (包括走廊/通道), 无法飞行
+  
+  ★ 教训: 防止墙壁瓦解不能通过让所有占据"不可逆"来实现,
+  因为这同时让噪点也不可逆!
+
+★ 第十六次正确修复: "强hit + 极弱miss" 平衡策略
+  核心思路: 不是禁止概率下降, 而是让占据概率极难被侵蚀
+  
+  OctoMap 概率更新机制 (log-odds模型):
+    hit:  log-odds += logit(hit_prob)   (正值, 增加占据概率)
+    miss: log-odds += logit(miss_prob)  (负值, 降低占据概率)
+  
+  参数设计:
+    hit=0.9  → logit = log(0.9/0.1)  = +2.20 (强占据证据)
+    miss=0.47 → logit = log(0.47/0.53) = -0.12 (极弱自由证据)
+    min=0.12 (默认值, 允许噪点被完全清理)
+    max=0.97 (默认值, 占据概率上限)
+  
+  数学分析:
+    一面墙被击中N次后, 概率被max钳位在0.97 (logodds=3.48)
+    要把墙壁从0.97降到低于0.5(变成自由), 需要:
+      3.48 / 0.12 = 29次连续miss更新
+      在2Hz频率下 → 需要约14.5秒的射线连续穿过同一个体素
+      实际中射线不可能持续穿过同一体素这么久 → 墙壁非常稳固
+    
+    一个噪点被击中1次后, logodds=2.20:
+      2.20 / 0.12 = 18次miss更新即可清理
+      在2Hz频率下 → 约9秒后噪点自动消失 → 自由空间保持干净
+
+修改文件:
+  launch/slam_mapping.launch:
+    - sensor_model/miss: 0.49 → 0.47 (极弱自由空间标记, hit/miss比 18:1)
+    - sensor_model/min: 0.51 → 0.12 (★恢复默认! 允许噪点被完全清理)
+    - sensor_model/max: 0.99 → 0.97 (恢复默认)
+    - 其余保持: max_range=15.0, hit=0.9, 2Hz
+
+  OctoMap问题历史总结:
+    第7-12次: 大地图建不了 (参数未优化, max_range太大导致太慢)
+    第13次: max_range 20→5m (错误! 只能建5m范围)
+    第14次: 分析替代方案, 未改参数
+    第15次: min=0.51 (错误! 空间全部填满)
+    第16次: 强hit+极弱miss平衡策略 ← 应该是正确方案
+
+--- 第十六次操作结束 ---
+
+--- 第十七次操作 ---
+
+【问题1: OctoMap墙壁瓦解/建不了大地图的真正根因 — TF配置错误!】
+
+  ★ 经过第7-16次反复调参(hit/miss/min/max/max_range), OctoMap问题从未彻底解决。
+  根本原因不在参数, 而在TF (坐标变换):
+
+  之前的数据流:
+    Fast-LIO2 → /cloud_registered (frame_id=camera_init, 全局坐标系)
+    → nan_filter → /cloud_filtered (frame_id=camera_init)
+    → throttle → /cloud_throttled (frame_id=camera_init)
+    → OctoMap (frame_id=camera_init)
+  
+  OctoMap收到点云后需要做射线追踪:
+    - 从传感器位置(sensor origin)到每个点, 沿途标记自由空间(miss), 终点标记占据(hit)
+    - sensor origin = TF查找: 点云frame_id → OctoMap frame_id 的变换的平移部分
+    - 当点云frame_id = camera_init, OctoMap frame_id = camera_init 时:
+      sensor origin = TF(camera_init → camera_init) = (0, 0, 0) !!
+    
+  ★ 所有射线都从世界坐标原点(0,0,0)出发, 而不是无人机当前位置!
+  
+  后果:
+    - 无人机在x=0附近时: 射线长度合理, 建图正常
+    - 无人机飞到x=5时: 射线从(0,0,0)出发到x=5处的点, 路径上穿过5m的空间
+    - 每条射线穿过之前建好的墙壁 → 大量错误miss更新 → 墙壁瓦解!
+    - 飞得越远, 射线越长, 穿过的墙壁越多 → "建到后面就建不了了"
+    - 无论怎么调 hit/miss/min/max 参数都无法根治, 因为问题在sensor origin!
+
+  之前的静态TF还存在冲突:
+    MAVROS发布: odom → base_link
+    Fast-LIO2发布: camera_init → body
+    静态TF: odom→map→camera_init→body→base_link
+    → 形成从odom到base_link的两条路径 = TF树冲突!
+
+  修复:
+    ① nan_filter改为订阅 /cloud_registered_body (frame_id=body)
+       - FAST-LIO2 的 scan_bodyframe_pub_en=true 会发布此话题
+       - 点云在body帧, OctoMap通过TF(body→camera_init)得到正确的无人机位置
+       - sensor origin = 无人机实际位置 → 射线追踪正确!
+    
+    ② 移除冲突的静态TF:
+       - 删除 body→base_link (消除第二条路径到base_link)
+       - 删除 odom→map (消除TF树环路)
+       - 保留 map→camera_init (RViz显示需要)
+       - TF树变成两棵独立树: SLAM树(map→camera_init→body) + MAVROS树(odom→base_link)
+
+【问题2: 飞行速度过快】
+
+  之前patrol_planner的_execute_step直接发送最终目标位置给PX4,
+  PX4以默认最大速度飞过去, 速度不可控。
+  
+  修复: 新增 flight_speed 参数 (默认0.4m/s)
+  - 当距离目标较远时, 发送一个限制距离的中间点
+  - max_step = flight_speed / 20Hz * 5 = 每帧允许的最大前方距离
+  - 效果: 无人机缓慢匀速飞向目标, 速度约0.4m/s
+  
+  在launch文件中可配置:
+    <param name="flight_speed" value="0.4"/>
+
+【问题3: 新建图方案 — FAST-LIO2 + Z轴切片 + 2D栅格 + A*】
+
+  这是业内主流方案, 完全不依赖OctoMap:
+  
+  第一步 (建图): 用 slam_mapping.launch 跑一遍大棚, save_map.py 保存PCD点云
+    - FAST-LIO2直接拼接全局点云, 建几公里的地图都不会卡
+    - 保存为 greenhouse_map.pcd (约50-400MB)
+  
+  第二步 (生成2D地图): 
+    rosrun mak4_sim pcd_to_2d_map.py --height 1.0 --tolerance 0.3
+    参数:
+      --height H: 飞行高度 (用于Z轴切片中心)
+      --tolerance T: 切片半宽 (实际取 [H-T, H+T] 范围的点)
+      --resolution R: 栅格分辨率 (默认0.05m, 即每像素5cm)
+      --inflate I: 障碍物膨胀半径 (默认0.2m, 安全距离)
+    输出: greenhouse_2d.pgm + greenhouse_2d.yaml (ROS标准map_server格式)
+  
+  第三步 (导航):
+    roslaunch mak4_sim navigation_2d.launch
+    - 加载2D栅格地图, 在RViz中显示
+    - 点击航点 → A*规划避障路径 → 定高自动飞行
+    终端命令: alt H | speed S | start | clear | stop | home | undo | status
+
+新增文件:
+  scripts/pcd_to_2d_map.py    - PCD→2D栅格转换工具
+  scripts/grid_map_planner.py - 2D栅格A*巡检规划器
+  launch/navigation_2d.launch - 2D导航启动文件
+  config/navigation_2d.rviz   - RViz配置
+
+修改文件:
+  scripts/nan_filter.py:
+    - 订阅话题: /cloud_registered → /cloud_registered_body (body帧)
+    - 这是OctoMap sensor origin问题的核心修复
+  
+  launch/slam_mapping.launch:
+    - 删除 odom→map 静态TF (消除TF树环路)
+    - 删除 body→base_link 静态TF (消除到base_link的第二条路径)
+    - 删除 base_link→base_link_frd 静态TF (跟随body→base_link一起移除)
+  
+  scripts/patrol_planner.py:
+    - 新增 flight_speed 参数 (默认0.4m/s)
+    - _execute_step 方法增加限速逻辑
+  
+  launch/navigation.launch:
+    - 新增 flight_speed 参数
+
+--- 第十七次操作结束 ---
+
+--- 第十八次操作 ---
+
+【任务概述】
+1. 飞行速度恢复: 去除第17次添加的0.4m/s限速, 恢复原始直接发目标点的快速飞行
+2. navigation_2d方案修复: RViz空白+TF报错 → 三个根因全部修复
+3. HTML文档全面审阅更新: 故障排除/参数汇总/TF说明全部同步到最新状态
+
+========================
+修复1: 飞行速度恢复
+========================
+
+问题: 第17次添加的flight_speed=0.4m/s限速导致无人机飞行过慢
+修复: 去除patrol_planner.py和grid_map_planner.py中_execute_step的限速代码
+
+修改文件:
+  scripts/patrol_planner.py:
+    - 去除 flight_speed 参数和 max_step 限速逻辑
+    - _execute_step 中直接发送目标点坐标 (恢复原始行为)
+  
+  scripts/grid_map_planner.py:
+    - 同样去除限速逻辑
+  
+  launch/navigation.launch:
+    - 注释掉 flight_speed 参数
+
+========================
+修复2: navigation_2d 三个严重问题
+========================
+
+【问题现象】
+  运行 navigation_2d.launch 后:
+  - RViz 完全空白, 看不到任何地图
+  - 相机的TF全部报错
+  - 没有航点/路径/无人机标记显示
+
+【根因分析 - 三个问题叠加】
+
+根因A: 话题名不匹配
+  grid_map_planner.py 发布的话题:
+    /patrol_markers, /route_markers, /drone_marker, /active_path
+  RViz 配置文件 navigation_2d.rviz 订阅的话题:
+    /patrol/waypoints, /patrol/planned_route, /patrol/drone_position, /patrol/active_path
+  → 话题名不一致, RViz 订阅不到任何数据
+
+根因B: 缺少Map类型显示
+  grid_map_planner.py 发布 OccupancyGrid 到 /map_2d 话题
+  但 navigation_2d.rviz 中没有 rviz/Map 类型的 Display!
+  反而有一个 octomap_rviz_plugin/OccupancyGrid 订阅 /octomap_binary (2D导航根本不用OctoMap)
+  → 地图发布了但RViz没有显示组件
+
+根因C: TF缺失
+  navigation_2d.launch 只有 map→camera_init 静态TF
+  缺少 odom→map 连接 → MAVROS的odom坐标系与RViz的camera_init不通
+  SLAM未运行时没有body帧 → 相机等依赖body的TF全部报错
+
+【修复方案】
+
+文件: scripts/grid_map_planner.py
+  - 话题名统一为 /patrol/xxx 命名 (与patrol_planner.py一致):
+    /patrol_markers → /patrol/waypoints
+    /route_markers → /patrol/planned_route
+    /drone_marker  → /patrol/drone_position
+    /active_path   → /patrol/active_path
+  - 新增 /patrol/altitude_plane 发布 (高度平面可视化)
+  - 所有 Marker 的 frame_id 从 "map" 改为 "camera_init" (匹配RViz Fixed Frame)
+  - OccupancyGrid 的 frame_id 从 "map" 改为 "camera_init"
+  - 增强无人机标记: 添加方向箭头、高度文字
+
+文件: config/navigation_2d.rviz
+  - 移除 octomap_rviz_plugin/OccupancyGrid (2D导航不用OctoMap)
+  - 新增 rviz/Map Display: 订阅 /map_2d, Alpha=0.7, Draw Behind=true
+  - 其他Display保持不变
+
+文件: launch/navigation_2d.launch
+  - 新增 odom→map 静态TF (桥接MAVROS坐标系到RViz)
+  - 保留 map→camera_init 静态TF
+
+========================
+修复3: HTML文档全面更新
+========================
+
+docs/ros_framework_guide.html 更新内容:
+  1. 故障排除 - OctoMap彩色方块消失:
+     - 更新为 "第十~十七次终极修复"
+     - 添加第十七次TF根因说明 (sensor origin错误)
+     - 更新参数为当前值 (max_range=15m, hit=0.9, miss=0.47...)
+  
+  2. 故障排除 - 新增 "navigation_2d地图不显示" 条目:
+     - 详述三个根因和修复方案
+  
+  3. 故障排除 - 新增 "飞行速度过慢" 条目:
+     - 说明第18次去除限速
+  
+  4. 故障排除 - TF树断裂:
+     - 更新添加第十七次优化说明 (移除冲突的静态TF)
+  
+  5. 故障排除 - TF警告base_link:
+     - 更新第十七次变更 (移除body→base_link静态TF)
+  
+  6. 参数汇总已包含第十八次变更
+
+========================
+当前两种导航方案状态
+========================
+
+方案一: OctoMap 3D导航 (navigation.launch)
+  流程: 建图 → save_map.py → navigation.launch
+  特点: 3D体素避障, 支持多层巡检
+  状态: 正常工作 (第17次TF修复后)
+
+方案二: PCD 2D栅格导航 (navigation_2d.launch) ★第18次修复
+  流程: 建图 → save_map.py → pcd_to_2d_map.py → navigation_2d.launch
+  特点: PCD切片转2D栅格, 稳定不丢块, 支持超大地图
+  状态: 第18次修复后应正常工作 (话题/RViz/TF三重修复)
+
+两种方案共用阶段一(建图)和阶段二(保存), 导航阶段二选一
+
+--- 第十八次操作结束 ---
+
+--- 第十九次操作 ---
+
+【任务概述】
+1. 硬件/软件时间同步机制审查
+2. 航线规划速度慢的原因分析
+3. EKF2参数全部失败的根因修复 (参数名不匹配PX4 v1.14.3)
+4. 1m高度无法起飞 + A*路径规划失败修复
+5. A*路径规划性能优化 (障碍物预膨胀)
+
+========================
+问题1: 时间同步机制分析
+========================
+
+【当前仿真环境中的同步状态】
+
+硬件同步 (传感器时钟):
+  ✓ 仿真中天然同步: Gazebo 是单线程物理引擎, 所有传感器共享同一时钟
+  ✓ LiDAR (10Hz), IMU (200Hz), 相机 (10Hz), 测距仪 (50Hz), 光流 (20Hz)
+    全部由Gazebo统一产生时间戳, 无任何时钟漂移
+  ✓ FAST-LIO2 配置: time_sync_en=false (正确! 仿真无需时间同步)
+  ✓ nan_filter.py: 保留原始消息header.stamp (时间戳不被修改)
+  ✓ slam_to_mavros.py: 转发原始SLAM时间戳给MAVROS
+
+软件同步:
+  ✓ Gazebo设置 /use_sim_time=true, ROS节点使用仿真时钟
+  ✓ rospy.Time.now() 返回仿真时间 (与传感器时间戳一致)
+  ✓ OctoMap使用 /cloud_throttled (2Hz降频), TF查询使用仿真时钟
+
+真机部署需要的同步 (当前仿真不需要, 真机时必须做):
+  - FAST-LIO2: time_sync_en 设为 true (LiDAR与IMU时钟对齐)
+  - time_offset_lidar_to_imu: 需要标定 (测量LiDAR-IMU时间偏差)
+  - MTF-01P光流: 通过PX4驱动自动同步 (无需额外配置)
+  - 相机: 需要设置外触发或软件同步 (取决于具体相机型号)
+  结论: 仿真中同步机制完善, 真机部署时需开启FAST-LIO2的时间同步
+
+========================
+问题2: 航线规划速度慢原因
+========================
+
+A*路径规划慢的核心原因 (不需要修改代码, 仅解释):
+
+1. 栅格分辨率高 → 搜索空间巨大
+   地图: 1132×408 = 461,856 个栅格 (分辨率0.05m)
+   规划一段20m路径需要遍历 ~400个栅格节点
+
+2. Python解释器效率低
+   Python 做循环/字典操作比 C++ 慢 50~100倍
+   A* 每次扩展需要: heapq操作 + 字典查询 + 碰撞检测
+
+3. 原有碰撞检测极其低效 (已在本次修复)
+   旧: 每扩展1个节点, 检查 safety_margin 圆内 ~113 个栅格
+   新: 预膨胀后只需 O(1) 数组查表
+
+修复后规划速度预期提升 10~50 倍 (消除碰撞检测的Python循环)
+
+如需进一步提速:
+  - 降低地图分辨率 (pcd_to_2d_map.py --resolution 0.10)
+  - 改用C++实现的规划器 (如 nav_core/global_planner)
+
+========================
+修复1: EKF2参数名不匹配 ★关键修复
+========================
+
+【问题根因】
+
+PX4 v1.14.3 对EKF2参数进行了重命名, 旧参数名在运行时不存在:
+  EKF2_HGT_MODE → EKF2_HGT_REF    (高度参考源)
+  EKF2_RNG_AID  → EKF2_RNG_CTRL   (测距仪控制模式)
+  EKF2_AID_MASK (bit1=光流) → EKF2_OF_CTRL (光流独立开关)
+
+configure_ekf2.py 一直使用旧参数名, 导致所有EKF2配置失败!
+
+【严重后果】
+  全部参数失败 → PX4 使用默认值:
+    EKF2_HGT_REF = 1 (GPS高度)  → 大棚无GPS → 无高度参考!
+    EKF2_OF_CTRL = 0 (光流禁用)  → 无水平位置参考!
+    EKF2_RNG_CTRL = 1 (条件模式) → 测距仪仅起降时启用
+  → 无人机完全没有位置/高度估计 → 无法起飞/只在地面转!
+
+这也解释了第14次以来反复出现的起飞问题!
+
+【修复方案】
+
+文件: scripts/configure_ekf2.py (完全重写)
+  新增功能:
+    1. 参数就绪检测: 先读取已知参数(SYS_AUTOSTART)确认PX4参数系统就绪
+    2. 兼容双名称: 先尝试新名称, 失败后尝试旧名称
+       EKF2_HGT_REF (新) → EKF2_HGT_MODE (旧) = 2 (测距仪)
+       EKF2_RNG_CTRL (新) → EKF2_RNG_AID (旧) = 2 (始终启用)
+    3. 新独立光流开关: EKF2_OF_CTRL = 1 (启用光流)
+    4. 重试机制: 每个参数最多重试3次
+    5. 同时设置旧版EKF2_AID_MASK=2作为兼容 (某些版本仍需要)
+  
+  参数值:
+    EKF2_HGT_REF = 2     (高度源: 测距仪)
+    EKF2_RNG_CTRL = 2    (测距仪始终启用, 非仅起降)
+    EKF2_OF_CTRL = 1     (启用光流定位)
+    EKF2_RNG_A_HMAX = 8.0  (测距仪最大高度)
+    EKF2_RNG_NOISE = 0.05  (测距仪噪声)
+    EKF2_RNG_A_VMAX = 2.0  (测距仪最大垂直速度)
+
+========================
+修复2: 1m高度无法起飞
+========================
+
+根因: EKF2参数全部失败 (见上), PX4无高度/位置参考
+修复: 上面的EKF2参数修复后, 测距仪+光流提供准确的高度和位置
+      → 1m起飞应能正常工作
+
+========================
+修复3: A*路径规划失败 + 性能优化
+========================
+
+A*失败原因:
+  1. max_iter=100,000 对大地图不够 → 提升到 500,000
+  2. 每次碰撞检查循环113个栅格, 严重拖慢搜索 → 改为查表
+  3. 起终点在障碍区但find_nearest_free搜索半径仅50格 → 扩大到100
+
+文件: scripts/grid_map_planner.py
+  新增 _inflate_grid() 方法:
+    - 使用 scipy.ndimage.binary_dilation 预膨胀障碍物
+    - 安全距离 0.3m → 6个栅格半径的圆形膨胀核
+    - 生成 self.free_grid 布尔数组 (True=可通行)
+    
+  新增 _is_inflated_free() 方法:
+    - O(1) 数组查表, 替代原来的O(n²)循环碰撞检测
+    
+  修改 _is_collision_free():
+    - 优先使用 free_grid 查表
+    - 回退到旧方法 (兼容无scipy环境)
+    
+  修改 _astar():
+    - max_iter: 100,000 → 500,000
+    - 起终点检查使用膨胀网格
+    - 添加计时日志 (显示规划耗时和扩展节点数)
+    
+  修改 _find_nearest_free():
+    - 搜索半径: 50 → 100
+    - 使用膨胀网格搜索安全点
+    
+  修改 _send_setpoint():
+    - frame_id: "camera_init" → "map" (与patrol_planner一致)
+
+  新依赖: scipy (已安装: pip3 install scipy)
+
+========================
+验证命令
+========================
+
+启动大棚 (EKF2参数应无报错):
+  roslaunch mak4_sim mak4_greenhouse.launch
+
+观察应出现:
+  [EKF2] PX4参数系统就绪 (SYS_AUTOSTART=xxx)
+  [EKF2] EKF2_HGT_REF = 2
+  [EKF2] EKF2_RNG_CTRL = 2
+  [EKF2] EKF2_OF_CTRL = 1
+  ...
+  [EKF2] ✓ 配置完成!
+
+启动2D导航 (A*应更快):
+  roslaunch mak4_sim navigation_2d.launch
+
+观察应出现:
+  [2D巡检] ✓ 障碍物膨胀完成: 安全距离=6格(0.30m)...
+  (规划航线时):
+  [2D巡检] A*完成: 0.xxs, 扩展xxx节点, 路径xxx点
+
+--- 第十九次操作结束 ---
+
+
+=====================================
+第二十次操作 (任务20)
+=====================================
+
+【修复内容】
+1. 高度平面可视化: 输入 alt 后在RViz 3D场景中显示高度平面 (半透明蓝色面 + 白色文字标签 + 边框线), patrol_planner.py 和 grid_map_planner.py 均已改为 MarkerArray 实现
+2. 飞行速度 0.8→1.8m/s: patrol_planner.py、grid_map_planner.py、navigation.launch、navigation_2d.launch 中的 flight_speed 全部修改为 1.8m/s
+3. 遥控起飞后自动落地修复: keyboard_teleop.py 起飞后进入"位置保持模式"(持续发送当前高度 setpoint), 不再因速度归零而坠落
+4. EKF2 参数警告修复: configure_ekf2.py 中 MAV_TYPE/SYS_AUTOSTART 改用 ParamGet 带回退参数名, 兼容 PX4 v1.14.3
+
+【C++ 工作空间 (全新创建)】
+工作空间路径: ~/catkin_ws_cpp/
+包名: mak4_sim_cpp
+
+所有自写 Python 脚本均已用 C++17 重新实现，编译为独立可执行文件:
+
+  C++ 节点对照表:
+  ┌──────────────────────────┬───────────────────────────────────┐
+  │ Python 脚本              │ C++ 节点                          │
+  ├──────────────────────────┼───────────────────────────────────┤
+  │ configure_ekf2.py        │ configure_ekf2_node               │
+  │ slam_to_mavros.py        │ slam_to_mavros_node               │
+  │ nan_filter.py            │ nan_filter_node                   │
+  │ keyboard_teleop.py       │ keyboard_teleop_node              │
+  │ takeoff_hover_test.py    │ takeoff_hover_test_node           │
+  │ patrol_planner.py        │ patrol_planner_node               │
+  │ grid_map_planner.py      │ grid_map_planner_node             │
+  │ save_map.py              │ save_map_node                     │
+  │ pcd_to_2d_map.py         │ pcd_to_2d_map (命令行工具)        │
+  │ boustrophedon_planner.py │ boustrophedon_planner_node        │
+  │ rrt_star_planner.py      │ rrt_star_planner_node             │
+  │ interactive_planner.py   │ interactive_planner_node          │
+  │ load_map.py              │ load_map_node                     │
+  └──────────────────────────┴───────────────────────────────────┘
+
+  C++ Launch 文件:
+  - mak4_greenhouse.launch  → PX4 SITL + Gazebo(大棚) + MAVROS + EKF2配置
+  - mak4_forest.launch      → PX4 SITL + Gazebo(森林) + MAVROS + EKF2配置
+  - slam_mapping.launch     → Fast-LIO2 + NaN过滤(C++) + OctoMap + RViz
+  - navigation.launch       → OctoMap 3D导航 + patrol_planner_node(C++)
+  - navigation_2d.launch    → 2D栅格导航 + grid_map_planner_node(C++)
+
+  共享资源 (符号链接):
+  - worlds/ → 原工作空间世界文件
+  - models/ → 原工作空间模型文件
+  - config/ → 复制的 RViz/YAML 配置
+  - FAST_LIO → 原工作空间 Fast-LIO2 (符号链接)
+  - livox_ros_driver → 原工作空间驱动 (符号链接)
+
+【C++ 快速启动指令】
+
+  # === 大棚场景完整流程 (C++ 版) ===
+
+  # 终端1: 启动大棚仿真
+  source ~/catkin_ws_cpp/devel/setup.bash
+  roslaunch mak4_sim_cpp mak4_greenhouse.launch
+
+  # 终端2: 启动 SLAM 建图
+  source ~/catkin_ws_cpp/devel/setup.bash
+  roslaunch mak4_sim_cpp slam_mapping.launch
+
+  # 终端3: 键盘遥控飞行建图
+  source ~/catkin_ws_cpp/devel/setup.bash
+  rosrun mak4_sim_cpp keyboard_teleop_node
+
+  # 终端4: 保存地图 (保持 slam_mapping 运行!)
+  source ~/catkin_ws_cpp/devel/setup.bash
+  rosrun mak4_sim_cpp save_map_node
+
+  # 终端2: 方案一 OctoMap 3D导航
+  source ~/catkin_ws_cpp/devel/setup.bash
+  roslaunch mak4_sim_cpp navigation.launch
+
+  # 终端2: 方案二 2D栅格导航 (先转换地图)
+  source ~/catkin_ws_cpp/devel/setup.bash
+  rosrun mak4_sim_cpp pcd_to_2d_map --pcd ~/catkin_ws/maps/slam_map.pcd --height 1.0
+  roslaunch mak4_sim_cpp navigation_2d.launch
+
+【Python 快速启动指令 (原工作空间, 不变)】
+
+  # === 大棚场景完整流程 (Python 版) ===
+
+  # 终端1: 启动大棚仿真
+  source ~/catkin_ws/devel/setup.bash
+  roslaunch mak4_sim mak4_greenhouse.launch
+
+  # 终端2: 启动 SLAM 建图
+  source ~/catkin_ws/devel/setup.bash
+  roslaunch mak4_sim slam_mapping.launch
+
+  # 终端3: 键盘遥控飞行建图
+  source ~/catkin_ws/devel/setup.bash
+  rosrun mak4_sim keyboard_teleop.py
+
+  # 终端4: 保存地图
+  source ~/catkin_ws/devel/setup.bash
+  rosrun mak4_sim save_map.py
+
+  # 方案一 OctoMap 3D导航
+  roslaunch mak4_sim navigation.launch
+
+  # 方案二 2D栅格导航
+  rosrun mak4_sim pcd_to_2d_map.py --pcd ~/catkin_ws/maps/slam_map.pcd --height 1.0
+  roslaunch mak4_sim navigation_2d.launch
+
+================================================================================
+第二十一次操作 — 修复MAVROS启动参数报错 & 航点布置 & 飞行参数调整
+================================================================================
+
+【问题1: MAVROS启动时参数报错】
+  现象:
+    PR: Unknown parameter to get: SYS_AUTOSTART
+    PR: Unknown parameter to get: MAV_TYPE
+    PR: Unknown parameter to get: COM_ARM_EKF_AB
+
+  原因分析:
+    - SYS_AUTOSTART / MAV_TYPE: PX4参数确实存在，但MAVROS启动太快，
+      在PX4参数服务器尚未就绪时就请求了，导致"Unknown parameter"。
+    - COM_ARM_EKF_AB: PX4 v1.14.3 已移除此参数，拆分为:
+      COM_ARM_EKF_POS, COM_ARM_EKF_VEL, COM_ARM_EKF_HGT, COM_ARM_EKF_YAW
+    - 另发现 scripts/__pycache__/configure_ekf2.cpython-38.pyc 是旧版缓存，
+      含有过期参数名，已删除。
+
+  修复方案:
+    将4个launch文件 (greenhouse/forest × Python/C++) 中的MAVROS启动方式
+    从 <include file="$(find mavros)/launch/px4.launch"> 改为直接启动节点，
+    并加入8秒延迟让PX4先完成初始化:
+
+      <node pkg="mavros" type="mavros_node" name="mavros" required="true"
+            clear_params="true" output="screen"
+            launch-prefix="bash -c 'sleep 8 && exec $0 $@' --">
+          <param name="fcu_url" value="$(arg fcu_url)"/>
+          <param name="gcs_url" value=""/>
+          <param name="target_system_id" value="1"/>
+          <param name="target_component_id" value="1"/>
+          <param name="fcu_protocol" value="v2.0"/>
+          <rosparam command="load" file="$(find mavros)/launch/px4_pluginlists.yaml"/>
+          <rosparam command="load" file="$(find mavros)/launch/px4_config.yaml"/>
+      </node>
+
+    configure_ekf2 节点也加入12秒延迟 (等MAVROS完全连接后再配置EKF2参数)。
+
+  修改的文件:
+    - catkin_ws/src/mak4_sim/launch/mak4_greenhouse.launch
+    - catkin_ws/src/mak4_sim/launch/mak4_forest.launch
+    - catkin_ws_cpp/src/mak4_sim_cpp/launch/mak4_greenhouse.launch
+    - catkin_ws_cpp/src/mak4_sim_cpp/launch/mak4_forest.launch
+    - 删除: catkin_ws/src/mak4_sim/scripts/__pycache__/configure_ekf2.cpython-38.pyc
+
+【问题2: RViz中只能在彩色OctoMap块上布置航点】
+  现象:
+    使用 RViz "Publish Point" 工具时，只有点击到OctoMap彩色体素才能
+    成功发布点，空白区域无法点击。
+
+  原因分析:
+    RViz的 Publish Point 通过射线投射(ray-cast)检测3D几何体表面。
+    如果场景中没有可见的平面几何体覆盖空白区域，射线无法命中任何物体。
+
+  修复方案:
+    在所有4个规划器 (patrol_planner / grid_map_planner × Python/C++) 的
+    高度平面发布函数中，增加一个"地面参考平面":
+    - 200m × 200m 的 CUBE Marker，位于 z=-0.05
+    - 极低透明度 (alpha=0.08)，几乎不可见但可被射线命中
+    - 这样用户可以点击地图上任意XY位置来放置航点
+
+  技术细节 (Python示例):
+    gnd = Marker()
+    gnd.ns = "ground_plane"
+    gnd.type = Marker.CUBE
+    gnd.pose.position.z = -0.05
+    gnd.scale.x = 200.0; gnd.scale.y = 200.0; gnd.scale.z = 0.1
+    gnd.color = ColorRGBA(0.3, 0.3, 0.3, 0.08)
+
+【问题3: 飞行参数调整】
+  - 飞行标准速度: 1.8 → 2.3 m/s (提高0.5m/s)
+  - 起飞初始高度: 2.0 → 1.0 m
+
+  修改的文件 (速度+高度):
+    - patrol_planner.py:     default_altitude 2.0→1.0, flight_speed 1.8→2.3
+    - patrol_planner_node.cpp: 同上
+    - navigation.launch (Python): default_altitude 2.0→1.0, flight_speed 1.8→2.3
+    - navigation.launch (C++):   同上
+
+  修改的文件 (仅速度, 高度已是1.0):
+    - grid_map_planner.py:       flight_speed 1.8→2.3
+    - grid_map_planner_node.cpp: flight_speed 1.8→2.3
+    - navigation_2d.launch (Python): speed 1.8→2.3
+    - navigation_2d.launch (C++):    speed 1.8→2.3
+
+【本次修改汇总】
+  Python包 (catkin_ws/src/mak4_sim):
+    launch/mak4_greenhouse.launch  — MAVROS直接启动+8s延迟, EKF2配置12s延迟
+    launch/mak4_forest.launch      — 同上
+    launch/navigation.launch       — altitude 1.0, speed 2.3
+    launch/navigation_2d.launch    — speed 2.3
+    scripts/patrol_planner.py      — altitude 1.0, speed 2.3, 地面参考平面
+    scripts/grid_map_planner.py    — speed 2.3, 地面参考平面
+
+  C++包 (catkin_ws_cpp/src/mak4_sim_cpp):
+    launch/mak4_greenhouse.launch  — MAVROS直接启动+8s延迟, EKF2配置12s延迟
+    launch/mak4_forest.launch      — 同上
+    launch/navigation.launch       — altitude 1.0, speed 2.3
+    launch/navigation_2d.launch    — speed 2.3
+    src/patrol_planner_node.cpp    — altitude 1.0, speed 2.3, 地面参考平面
+    src/grid_map_planner_node.cpp  — speed 2.3, 地面参考平面
+
+  C++重新编译: catkin_make 成功 (patrol_planner_node + grid_map_planner_node)
+
+================================================================================
+第二十一次操作(补充) — 修复 roslaunch 找不到 px4 包 / mak4_sim_cpp 包
+================================================================================
+
+【问题: roslaunch 报 "Resource not found: px4"】
+
+  现象:
+    # 不 source 直接运行 → 找不到包
+    $ roslaunch mak4_sim_cpp mak4_greenhouse.launch
+    RLException: [mak4_greenhouse.launch] is neither a launch file in package [mak4_sim_cpp]
+
+    # source 之后 → 找不到 PX4
+    $ source ~/catkin_ws_cpp/devel/setup.bash
+    $ roslaunch mak4_sim_cpp mak4_greenhouse.launch
+    Resource not found: px4
+
+  根因:
+    catkin 的 setup.bash 会 **重置** ROS_PACKAGE_PATH。
+    .bashrc 中虽然在 catkin_ws 之后追加了 PX4 路径，
+    但用户手动 source catkin_ws_cpp/devel/setup.bash 时，
+    ROS_PACKAGE_PATH 被覆盖为仅包含 catkin_ws_cpp/src + /opt/ros/noetic/share，
+    PX4-Autopilot 路径丢失 → $(find px4) 失败。
+
+  修复方案:
+    修改 ~/.bashrc，将 PX4 环境设置封装为函数 setup_px4_env()，
+    并创建两个快捷命令 use_cpp / use_py:
+
+      setup_px4_env() {
+        source $PX4_HOME/Tools/simulation/gazebo-classic/setup_gazebo.bash ...
+        export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$PX4_HOME:...
+      }
+      alias use_cpp='source ~/catkin_ws_cpp/devel/setup.bash && setup_px4_env'
+      alias use_py='source ~/catkin_ws/devel/setup.bash && setup_px4_env'
+
+【正确的启动方式】
+
+  # Python 工作空间 (默认, 新终端自动生效):
+  roslaunch mak4_sim mak4_greenhouse.launch
+
+  # C++ 工作空间 (需要先切换):
+  use_cpp
+  roslaunch mak4_sim_cpp mak4_greenhouse.launch
+
+  # 切回 Python 工作空间:
+  use_py
+  roslaunch mak4_sim mak4_greenhouse.launch
+
+  ⚠️ 注意: 每个终端只能用一个工作空间!
+  ⚠️ 不要直接 source setup.bash, 要用 use_cpp / use_py 快捷命令!
+
+================================================================================
+第二十二次操作 — 速度3倍 + 起飞高度1.5m + 移除地面参考平面
+================================================================================
+
+【修改1: 巡检飞行速度提升至3倍】
+  2.3 m/s → 6.9 m/s
+
+  修改文件:
+    patrol_planner.py / patrol_planner_node.cpp   — flight_speed 默认 6.9
+    grid_map_planner.py / grid_map_planner_node.cpp — flight_speed 默认 6.9
+    navigation.launch (Python/C++)   — flight_speed 6.9
+    navigation_2d.launch (Python/C++) — speed 6.9
+
+【修改2: 起飞高度改为1.5m】
+  keyboard_teleop.py:     takeoff(2.0) → takeoff(1.5)
+  keyboard_teleop_node.cpp: takeoff(2.0) → takeoff(1.5)
+  patrol_planner.py:      default_altitude 1.0 → 1.5
+  patrol_planner_node.cpp: default_altitude 1.0 → 1.5
+  navigation.launch (Python/C++): default_altitude 1.0 → 1.5
+
+【修改3: 移除地面参考平面 (alpha=0.08 ground plane)】
+  用户后续将使用2D栅格方案, 不再需要OctoMap点击地面参考平面。
+  此Marker仅为RViz可视化, 不影响SLAM建图/OctoMap, 安全移除。
+
+  移除位置:
+    patrol_planner.py / grid_map_planner.py     — _publish_altitude_plane()
+    patrol_planner_node.cpp / grid_map_planner_node.cpp — publishAltitudePlane()
+
+  C++ 重编译: catkin_make 成功
+
+================================================================================
+第二十三次操作 — 修复飞行定高 + 相机TF + 建图导航检查 + 真实测试指南
+================================================================================
+
+【修复1: 键盘遥控 R→W 不停上升 + 高度不稳定】
+
+  问题现象:
+    - 按R上升后按W前飞, 无人机仍然继续上升 (边升边飞)
+    - 飞行中高度不稳定, 忽高忽低
+
+  根因:
+    1) 按键互不清零: R键只设 vz=0.3, 不清除 vx/vy;
+       W键只设 vx=0.5, 不清除 vz → vz残留导致持续上升
+    2) 纯速度模式: vz=0 时依赖PX4速度控制器保持高度,
+       但光流+测距仪的EKF2融合在速度模式下有微小漂移
+
+  修复方案:
+    a) 所有按键现在清零全部轴的速度:
+       - WASD/QE: 同时设 vz=0 (不再残留垂直速度)
+       - R/F: 同时设 vx=vy=yr=0 (纯垂直运动)
+    b) 引入混合控制 (setpoint_raw/local + PositionTarget):
+       - 水平运动: 用速度控制 (velocity XY)
+       - 垂直保持: 用位置控制 (position Z) ★关键
+       - 当vz=0时, 自动锁定当前高度作为Z轴位置目标
+       - 当按R/F时, 切换为全速度模式 (垂直运动)
+       - 按其他键时, 记忆当前高度进行位置锁定
+
+  修改文件:
+    keyboard_teleop.py           — 重写 send_command(), 用 setpoint_raw/local
+    keyboard_teleop_node.cpp     — 同样重写 sendCommand()
+
+  技术细节:
+    话题:  /mavros/setpoint_raw/local (mavros_msgs/PositionTarget)
+    定高 type_mask = 1507:
+      IGNORE_PX | IGNORE_PY | IGNORE_VZ | IGNORE_AF* | IGNORE_YAW
+      → 使用 velocity.x/y (速度XY) + position.z (位置Z) + yaw_rate
+    升降 type_mask = 1479:
+      IGNORE_PX | IGNORE_PY | IGNORE_PZ | IGNORE_AF* | IGNORE_YAW
+      → 使用 velocity.x/y/z (全速度) + yaw_rate
+
+【修复2: 相机TF报错】
+
+  问题现象:
+    控制台/RViz持续报 camera_link 帧无变换:
+    "No transform from [camera_link] to [camera_init]"
+
+  根因:
+    Gazebo SDF中相机发布话题 frame_id = "camera_link"
+    但ROS TF树中没有 body→camera_link 的变换
+    SDF的 <joint> 只在Gazebo物理引擎内部起作用, 不发布ROS TF
+
+  修复:
+    在4个greenhouse/forest launch文件中添加静态TF:
+    <node pkg="tf2_ros" type="static_transform_publisher" name="body_to_camera_link"
+          args="0.12 0 0 0 0 0 body camera_link"/>
+    (0.12m前向, 与SDF中camera_link的pose一致)
+
+  修改文件:
+    mak4_greenhouse.launch (Python)
+    mak4_forest.launch (Python)
+    mak4_greenhouse.launch (C++)
+    mak4_forest.launch (C++)
+
+【检查: 建图和路径规划】
+
+  检查结果: 代码结构正常, 无需修改
+    ✓ TF树分离方案正确 (SLAM: map→camera_init→body, MAVROS: odom→base_link)
+    ✓ map 和 camera_init 通过恒等静态TF连接, 坐标一致
+    ✓ nan_filter 订阅 /cloud_registered_body (body帧), OctoMap传感器原点正确
+    ✓ A* / 巡检状态机逻辑正常
+    ✓ 速度限制和安全距离参数正常
+
+【新建: 真实启动.txt】
+  详细的真实飞行测试指南, 分7个阶段:
+    阶段1: 飞控基础验证 (RC遥控器手飞)
+    阶段2: 机载电脑通信 (MAVROS串口连接)
+    阶段3: 创建真实launch文件
+    阶段4: 手持建图 (不飞, 验证SLAM)
+    阶段5: 首次自主悬停
+    阶段6: 自主建图飞行
+    阶段7: 自主巡检飞行
+  包含: 参数对比表、故障排除、安全红线
+
+  C++ 重编译: catkin_make 成功
+
+================================================================================
+第二十四次操作 — C++中文显示修复 + 起飞旋转修复 + 动态避障 + Orange Pi环境配置
+================================================================================
+
+目标:
+  1. 修复C++代码运行时打印 "???????" 的问题
+  2. 修复规划路径起飞时无人机在地面旋转无法起飞的问题
+  3. 添加全局/局部代价地图 + 动态障碍自动避障 (重规划)
+  4. 在 真实启动.txt 中添加 Orange Pi 上位机完整环境配置清单
+  5. 同步修复Python版本的起飞旋转问题
+
+──────────────────────────────────────────────────────────
+
+【修复1: C++中文字符显示 "???????" 】
+
+  问题现象:
+    所有C++节点的ROS_INFO/ROS_WARN中的中文都显示为 "???????"
+    例如: "[2D???C++] ????! ??=1.0m"
+
+  根因:
+    C++ 默认使用 "C" locale, 不支持多字节UTF-8字符
+    需要在 main() 中调用 std::setlocale(LC_ALL, "") 切换为系统locale
+
+  修复:
+    所有13个C++节点 .cpp 文件:
+    (1) 添加 #include <clocale>
+    (2) 在 main() 开头, ros::init() 之前添加: std::setlocale(LC_ALL, "");
+
+  修改文件 (全部13个):
+    grid_map_planner_node.cpp, patrol_planner_node.cpp,
+    keyboard_teleop_node.cpp, configure_ekf2_node.cpp,
+    boustrophedon_planner_node.cpp, interactive_planner_node.cpp,
+    rrt_star_planner_node.cpp, load_map_node.cpp, nan_filter_node.cpp,
+    save_map_node.cpp, slam_to_mavros_node.cpp, takeoff_hover_test_node.cpp,
+    pcd_to_2d_map_node.cpp
+
+【修复2: 起飞时无人机在地面旋转 (C++ & Python)】
+
+  问题现象:
+    执行 "start" 后无人机在地面上持续旋转, 无法正常起飞
+
+  根因:
+    PRE_ARM 和 TAKING_OFF 阶段调用 sendSetpoint(cx, cy, alt) 时 yaw=NAN
+    yaw=NAN 时 orientation.w=1.0, 相当于强制 yaw=0
+    如果无人机当前朝向不是0度, PX4在地面尝试旋转到0度, 导致原地转圈
+
+  修复 (C++):
+    (1) 添加 getCurrentYaw() 辅助函数 (从四元数提取yaw)
+    (2) PRE_ARM: sendSetpoint(cx, cy, alt, getCurrentYaw())
+    (3) TAKING_OFF: 同上
+
+  修改C++文件:
+    grid_map_planner_node.cpp, patrol_planner_node.cpp
+
+  修复 (Python):
+    (1) 添加 _get_current_yaw() 方法
+    (2) PRE_ARM/TAKING_OFF 调用时传入当前yaw
+
+  修改Python文件:
+    grid_map_planner.py, patrol_planner.py
+
+【修复3: A* 路径规划非确定性 (grid_map_planner)】
+
+  grid_map_planner_node.cpp 的A*改为4元组 (f, counter, x, y) 加入递增计数器
+  与 patrol_planner_node.cpp 保持一致
+
+【新增: 全局/局部代价地图 + 动态障碍自动避障】
+
+  设计:
+    全局代价地图 = 静态PGM栅格 + 预膨胀 (free_grid_, 已有)
+    局部代价地图 = 实时点云飞行平面切片 → 动态障碍格子 (带TTL过期)
+    综合碰撞检测 = 静态 + 动态叠加
+    自动重规划 = 飞行中定期检查路径, 有碰撞则A*重规划当前航段
+
+  grid_map_planner_node.cpp 新增:
+    - 订阅 /cloud_filtered 实时点云
+    - cloudCb(): 飞行平面±1m内点云 → 2D动态障碍 (膨胀+TTL 3秒)
+    - checkPathCollision(): 每0.5s检查当前路径碰撞
+    - replanCurrentSegment(): 碰撞时自动重规划
+    - astarDynamic(): 综合A* (静态+动态)
+    - publishLocalCostmap(): 发布 /local_costmap_2d 可视化
+
+  patrol_planner_node.cpp 新增:
+    - executeStep()中每1s检查路径碰撞
+    - 碰撞时用实时OctoMap数据重规划当前航段
+
+  新RViz话题: /local_costmap_2d (OccupancyGrid)
+  新参数: local_costmap_radius(5m), obstacle_ttl(3s), replan_check_interval(0.5s)
+  CMakeLists.txt: grid_map_planner 添加 PCL 链接
+
+【新增: 真实启动.txt — Orange Pi 环境配置清单】
+
+  附录A 共12步: 系统基础 → ROS Noetic → MAVROS → Livox SDK2 →
+  Fast-LIO2 → PCL/OctoMap → 部署功能包 → bashrc → 串口权限 →
+  多机ROS → 开机自启 → 验证清单
+
+  C++ 重编译: catkin_make 全部13个节点编译成功

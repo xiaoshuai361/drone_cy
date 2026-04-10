@@ -1,0 +1,492 @@
+================================================================================
+      MAK4 7寸四旋翼无人机 —— 真实飞行测试指南 (一步一步来)
+================================================================================
+
+=== 硬件清单 ===
+- MAK4 7寸四旋翼 + PX4飞控 (v1.14.3固件)
+- 机载电脑: (树莓派4 / NUC / Jetson Nano 等, 运行 Ubuntu 20.04 + ROS Noetic)
+- Livox Mid360 3D激光雷达 (顶部安装)
+- RGB-D深度相机 (前向安装, 如 Intel RealSense D435i)
+- 微空光流模块 (底部安装, 已有)
+- 激光测距仪 (底部安装, 1D定高)
+- RC遥控器 (必须! 用于紧急切换手动模式)
+
+================================================================================
+第一阶段: 飞控基础验证 (不装机载电脑, 仅RC遥控器)
+================================================================================
+
+目的: 确认飞控固件、传感器、电调、电机正常工作
+
+步骤 1.1 — 地面检查 (不通电桨叶)
+  □ 拆除或不安装螺旋桨 (安全第一!)
+  □ 连接电池, 听飞控蜂鸣器初始化音
+  □ 用 QGroundControl (QGC) 连接飞控:
+    - USB数据线直连, 或 WiFi/数传
+  □ QGC中检查:
+    - 固件版本: PX4 v1.14.3
+    - 传感器校准: 加速度计、陀螺仪、磁力计 (已校准则绿色勾)
+    - RC校准: 确认遥控器所有通道响应正确
+    - 电调校准: 确认4个电机方向正确 (QGC电机测试页面)
+    - 安全开关: 设置好故障保护 (RC丢失→自动降落, 低电量→RTL)
+
+步骤 1.2 — 手动飞行测试 (室外空旷场地)
+  □ 安装螺旋桨
+  □ 切换到 Position 模式 (遥控器模式开关)
+  □ 解锁并起飞到约 1.5m
+  □ 验证:
+    - 悬停稳定性 (不飘移)
+    - 四个方向平移响应
+    - 偏航旋转
+    - 上升/下降
+  □ 降落, 确认一切正常
+
+步骤 1.3 — 室内光流+测距仪验证
+  □ 在室内平坦地面 (有纹理, 光照充足)
+  □ QGC中确认:
+    - EKF2_HGT_REF = 2 (测距仪定高) — 或 EKF2_HGT_MODE = 2
+    - EKF2_RNG_CTRL = 2 (始终用测距仪) — 或 EKF2_RNG_AID = 2
+    - EKF2_OF_CTRL = 1 (启用光流)
+    - EKF2_RNG_A_HMAX = 8.0 (测距仪最大有效高度)
+  □ Position模式起飞, 松杆悬停
+  □ 验证:
+    - 高度稳定 (不用GPS, 仅靠测距仪)
+    - 位置稳定 (不用GPS, 仅靠光流)
+    - 如果漂移严重 → 检查光流安装方向、地面纹理、光照
+
+================================================================================
+第二阶段: 机载电脑通信验证 (先不飞, 地面测试)
+================================================================================
+
+目的: 确认机载电脑能通过 MAVROS 与飞控正常通信
+
+步骤 2.1 — 机载电脑环境搭建
+  □ 安装 Ubuntu 20.04 + ROS Noetic (参考仿真环境)
+  □ 安装 MAVROS:
+    sudo apt install ros-noetic-mavros ros-noetic-mavros-extras
+    # 安装 GeographicLib 数据集:
+    sudo /opt/ros/noetic/lib/mavros/install_geographiclib_datasets.sh
+  □ 安装 Fast-LIO2:
+    cd ~/catkin_ws/src
+    git clone https://github.com/hku-mars/FAST_LIO.git
+    # (按照仿真环境中的编译方式)
+  □ 安装 livox_ros_driver (如果用 Mid360):
+    cd ~/catkin_ws/src
+    git clone https://github.com/Livox-SDK/livox_ros_driver.git
+    cd ~/catkin_ws && catkin_make
+  □ 复制 mak4_sim 功能包到机载电脑 (去掉仿真相关的 Gazebo world/model):
+    scp -r ~/catkin_ws/src/mak4_sim user@onboard_ip:~/catkin_ws/src/
+
+步骤 2.2 — 串口连接飞控
+  □ 飞控 TELEM2 端口 → 机载电脑 USB (通过 FTDI 或直接串口)
+  □ 设置波特率 (QGC中 MAV_1_CONFIG = TELEM2, MAV_1_RATE = 921600)
+  □ 确认设备节点:
+    ls /dev/ttyUSB*    # 应该看到 /dev/ttyUSB0
+    # 或 /dev/ttyACM0 (USB直连)
+  □ 测试 MAVROS 连接 (不飞, 仅通信):
+    roslaunch mavros px4.launch fcu_url:=/dev/ttyUSB0:921600
+  □ 验证话题:
+    rostopic echo /mavros/state         # connected: True
+    rostopic echo /mavros/imu/data      # IMU数据流
+    rostopic echo /mavros/local_position/pose  # 位置数据
+
+步骤 2.3 — 激光雷达驱动验证
+  □ 连接 Mid360 (以太网/USB)
+  □ 修改 livox_ros_driver 配置文件, 设置雷达IP
+  □ 启动雷达:
+    roslaunch livox_ros_driver livox_lidar_msg.launch
+  □ 验证:
+    rostopic hz /livox/lidar  # 应约 10Hz
+    # 或查看点云:
+    rviz (添加 PointCloud2, topic=/livox/lidar)
+
+步骤 2.4 — 深度相机驱动验证
+  □ 连接相机 (USB3.0)
+  □ 安装驱动 (以RealSense为例):
+    sudo apt install ros-noetic-realsense2-camera
+  □ 启动:
+    roslaunch realsense2_camera rs_camera.launch
+  □ 验证:
+    rostopic hz /camera/color/image_raw   # 应约 30Hz
+    rostopic hz /camera/depth/image_rect_raw
+
+================================================================================
+第三阶段: 创建真实飞行Launch文件
+================================================================================
+
+目的: 基于仿真的launch文件, 改造为真实飞行版本
+
+步骤 3.1 — 创建 mak4_real.launch (替代 mak4_greenhouse.launch)
+  核心区别:
+  - 去掉 PX4 SITL + Gazebo (真实飞行不需要仿真)
+  - MAVROS 的 fcu_url 改为串口: /dev/ttyUSB0:921600
+  - EKF2 参数可能已在QGC中设置好, 不一定需要 configure_ekf2 节点
+  - 添加真实的 livox_ros_driver 启动
+
+  参考模板:
+  ```xml
+  <launch>
+      <!-- MAVROS 连接真实飞控 -->
+      <node pkg="mavros" type="mavros_node" name="mavros" output="screen">
+          <param name="fcu_url" value="/dev/ttyUSB0:921600"/>
+          <param name="gcs_url" value=""/>
+          <param name="target_system_id" value="1"/>
+          <rosparam command="load" file="$(find mavros)/launch/px4_pluginlists.yaml"/>
+          <rosparam command="load" file="$(find mavros)/launch/px4_config.yaml"/>
+      </node>
+
+      <!-- Livox Mid360 激光雷达 -->
+      <include file="$(find livox_ros_driver)/launch/livox_lidar_msg.launch"/>
+
+      <!-- 深度相机 (以RealSense为例) -->
+      <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+          <arg name="depth_width" value="320"/>
+          <arg name="depth_height" value="240"/>
+          <arg name="depth_fps" value="10"/>
+      </include>
+
+      <!-- 相机TF: body → camera_link -->
+      <node pkg="tf2_ros" type="static_transform_publisher" name="body_to_camera_link"
+            args="0.12 0 0 0 0 0 body camera_link"/>
+  </launch>
+  ```
+
+步骤 3.2 — slam_mapping.launch 基本不需要改
+  Fast-LIO2 配置文件需要调整:
+  - lid_topic: 改为真实雷达话题 (如 /livox/lidar)
+  - imu_topic: 保持 /mavros/imu/data
+  - 外参 extrinsic_T: 根据真实安装位置测量调整
+
+步骤 3.3 — navigation.launch / navigation_2d.launch 不需要改
+  这些已经是纯ROS节点, 不依赖仿真
+
+================================================================================
+第四阶段: 室内静态建图 (手持/推车, 不飞)
+================================================================================
+
+目的: 先验证SLAM建图效果, 不用冒飞行风险
+
+步骤 4.1 — 手持建图
+  □ 把无人机(开机但不飞)放在推车上, 或手持
+  □ 启动 (两个终端):
+    终端1: roslaunch mak4_sim mak4_real.launch   # MAVROS + 传感器
+    终端2: roslaunch mak4_sim slam_mapping.launch # SLAM + OctoMap + RViz
+  □ 缓慢推动/移动无人机, 在RViz中观察:
+    - 点云是否正常累积
+    - 地图是否成形
+    - 有无严重畸变或漂移
+
+步骤 4.2 — 保存地图
+  □ 建图完成后:
+    终端3: rosrun mak4_sim save_map.py
+    # 地图保存到 ~/catkin_ws/maps/
+
+步骤 4.3 — 生成2D导航地图
+  □ rosrun mak4_sim pcd_to_2d_map.py --input ~/catkin_ws/maps/xxx.pcd
+  □ 检查生成的 PGM/YAML 文件
+
+================================================================================
+第五阶段: 首次自主飞行 (简单悬停 + 定点)
+================================================================================
+
+⚠ 安全注意事项:
+  - 场地足够大, 至少 5m×5m 空旷区域
+  - RC遥控器在手, 随时准备切 Position/Manual 模式
+  - 先从低高度 (0.5m) 开始
+  - 有人在旁边观察, 异常立即切手动
+  - 电池电量充足 (>70%)
+
+步骤 5.1 — OFFBOARD模式起飞测试
+  □ 启动所有节点:
+    终端1: roslaunch mak4_sim mak4_real.launch
+    终端2: rosrun mak4_sim keyboard_teleop.py
+  □ RC遥控器切到 Position 模式
+  □ keyboard_teleop 中按 T 起飞
+    - 程序会发送 OFFBOARD 命令, 然后解锁起飞
+    - 如果遥控器不在 OFFBOARD 模式开关位, PX4会拒绝
+    - ⚠ 建议: 先用遥控器手动起飞到 1m, 然后切 OFFBOARD 开关
+  □ 观察:
+    - 起飞到 1.5m 后是否稳定悬停
+    - 高度是否锁定 (测距仪+光流)
+  □ 按 W/S/A/D 测试前后左右移动
+  □ 按 L 降落
+
+步骤 5.2 — 速度调整
+  □ 真实飞行中速度应该比仿真低!
+  □ 建议初始速度:
+    - linear_speed: 0.3 m/s (仿真中用了0.5)
+    - vertical_speed: 0.2 m/s (仿真中用了0.3)
+  □ 确认稳定后再逐步提高
+
+================================================================================
+第六阶段: 自主建图飞行
+================================================================================
+
+步骤 6.1 — 遥控建图
+  □ 启动:
+    终端1: roslaunch mak4_sim mak4_real.launch
+    终端2: roslaunch mak4_sim slam_mapping.launch
+    终端3: rosrun mak4_sim keyboard_teleop.py
+  □ 用键盘遥控, 缓慢飞行建图
+  □ 飞行高度: 1.0~1.5m
+  □ 速度: 0.3 m/s
+  □ 大棚内沿过道来回飞行
+  □ 建图完成后保存
+
+步骤 6.2 — 检查地图质量
+  □ 保存地图: rosrun mak4_sim save_map.py
+  □ 生成2D: rosrun mak4_sim pcd_to_2d_map.py
+  □ 在RViz中检查地图是否完整
+
+================================================================================
+第七阶段: 自主巡检飞行
+================================================================================
+
+步骤 7.1 — 2D导航巡检
+  □ 启动:
+    终端1: roslaunch mak4_sim mak4_real.launch
+    终端2: roslaunch mak4_sim navigation_2d.launch
+  □ 在RViz中用 Publish Point 点击航点
+  □ 终端输入 'start'
+  □ ⚠ RC遥控器保持在手, 随时切手动!
+  □ 观察:
+    - 无人机是否沿航点飞行
+    - 是否正确避障
+    - 高度是否稳定
+
+步骤 7.2 — 参数微调
+  □ flight_speed: 真实飞行建议 1.0~2.0 m/s (仿真用了6.9)
+  □ safety_margin: 真实飞行建议 0.5~0.8m (仿真用了0.3~0.4)
+  □ waypoint_threshold: 0.5m 通常够用
+
+================================================================================
+附录A: 上位机 (Orange Pi) 完整环境配置清单
+================================================================================
+
+目标系统: Orange Pi 5 / 5B / 5 Plus (RK3588, 运行 Ubuntu 20.04 ARM64)
+前提: 已烧录 Ubuntu 20.04 Server/Desktop, 网络可用, SSH可用
+
+--- A.1 系统基础 ---
+
+# 更新系统
+sudo apt update && sudo apt upgrade -y
+
+# 安装基础工具
+sudo apt install -y build-essential cmake git wget curl python3-pip \
+  vim net-tools htop openssh-server lsb-release gnupg2
+
+# 设置时区和语言
+sudo timedatectl set-timezone Asia/Shanghai
+sudo locale-gen en_US.UTF-8 zh_CN.UTF-8
+export LANG=en_US.UTF-8
+
+--- A.2 安装 ROS Noetic ---
+
+# 添加ROS源
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+sudo apt update
+
+# 安装 ROS Noetic (桌面完整版或基础版)
+# 如果 Orange Pi 有显示器:
+sudo apt install -y ros-noetic-desktop
+# 如果无头 (headless, 推荐):
+sudo apt install -y ros-noetic-ros-base
+
+# 初始化 rosdep
+sudo apt install -y python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool
+sudo rosdep init
+rosdep update
+
+# 加入 bashrc
+echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+
+--- A.3 安装 MAVROS ---
+
+sudo apt install -y ros-noetic-mavros ros-noetic-mavros-extras
+
+# 安装 GeographicLib 数据集 (必须!)
+sudo /opt/ros/noetic/lib/mavros/install_geographiclib_datasets.sh
+
+--- A.4 安装 Livox SDK2 + 驱动 ---
+
+# Livox SDK2 (Mid360 需要)
+cd ~
+git clone https://github.com/Livox-SDK/Livox-SDK2.git
+cd Livox-SDK2 && mkdir build && cd build
+cmake .. && make -j$(nproc)
+sudo make install
+
+# livox_ros_driver2
+mkdir -p ~/catkin_ws/src && cd ~/catkin_ws/src
+git clone https://github.com/Livox-SDK/livox_ros_driver2.git
+# 修改 CMakeLists.txt 中 ROS2 相关部分 (只保留 ROS1 编译)
+cd ~/catkin_ws && catkin_make
+
+--- A.5 安装 Fast-LIO2 ---
+
+cd ~/catkin_ws/src
+git clone https://github.com/hku-mars/FAST_LIO.git
+cd FAST_LIO && git submodule update --init
+
+# 编译 (Orange Pi ARM64 可能较慢, 约5-10分钟)
+cd ~/catkin_ws && catkin_make -j2
+# 注意: ARM上内存有限, 用 -j2 避免 OOM
+
+--- A.6 安装 PCL + OctoMap + 其他ROS包 ---
+
+sudo apt install -y \
+  ros-noetic-pcl-ros \
+  ros-noetic-pcl-conversions \
+  ros-noetic-octomap-ros \
+  ros-noetic-octomap-server \
+  ros-noetic-tf2-ros \
+  ros-noetic-tf2-geometry-msgs \
+  ros-noetic-image-transport \
+  ros-noetic-cv-bridge \
+  ros-noetic-rviz \
+  libpcl-dev \
+  libyaml-cpp-dev
+
+# Python 依赖 (如果使用 Python 版本)
+pip3 install numpy scipy PyYAML
+
+--- A.7 部署 mak4_sim 功能包 ---
+
+# 方法1: 从开发机SCP
+scp -r ~/catkin_ws/src/mak4_sim user@orangepi_ip:~/catkin_ws/src/
+scp -r ~/catkin_ws/src/mak4_sim_cpp user@orangepi_ip:~/catkin_ws/src/
+# (删除仿真相关文件: worlds/, models/, launch中的gazebo相关launch)
+
+# 方法2: 从Git仓库克隆
+cd ~/catkin_ws/src && git clone <你的仓库地址>
+
+# 编译
+cd ~/catkin_ws && catkin_make -j2
+
+--- A.8 创建工作空间启动脚本 ---
+
+# 在 Orange Pi 的 ~/.bashrc 末尾添加:
+cat >> ~/.bashrc << 'EOF'
+
+# === MAK4 无人机环境 ===
+source /opt/ros/noetic/setup.bash
+source ~/catkin_ws/devel/setup.bash
+export ROS_MASTER_URI=http://localhost:11331
+export ROS_HOSTNAME=$(hostname -I | awk '{print $1}')
+
+# 常用别名
+alias roscd_mak4='cd ~/catkin_ws/src/mak4_sim'
+alias mav_status='rostopic echo /mavros/state'
+alias mav_pose='rostopic echo /mavros/local_position/pose'
+EOF
+
+--- A.9 串口权限 (飞控连接) ---
+
+# 添加用户到 dialout 组 (免sudo访问串口)
+sudo usermod -aG dialout $USER
+# 重新登录生效
+
+# 确认设备:
+ls /dev/ttyUSB* /dev/ttyACM*
+
+# udev规则 (可选, 固定设备名):
+echo 'SUBSYSTEM=="tty", ATTRS{idVendor}=="26ac", ATTRS{idProduct}=="0011", SYMLINK+="px4_fcu"' | sudo tee /etc/udev/rules.d/99-px4.rules
+sudo udevadm control --reload-rules
+
+--- A.10 网络配置 (多机ROS) ---
+
+# 如果需要通过WiFi在笔记本上运行RViz:
+# Orange Pi (主机):
+export ROS_MASTER_URI=http://<orangepi_ip>:11331
+export ROS_HOSTNAME=<orangepi_ip>
+
+# 笔记本 (从机):
+export ROS_MASTER_URI=http://<orangepi_ip>:11331
+export ROS_HOSTNAME=<laptop_ip>
+# 然后在笔记本上: rviz 即可远程可视化
+
+--- A.11 开机自启 (可选) ---
+
+# 创建 systemd 服务
+sudo tee /etc/systemd/system/mak4-ros.service << 'EOF'
+[Unit]
+Description=MAK4 ROS Launch
+After=network.target
+
+[Service]
+Type=simple
+User=orangepi
+Environment="HOME=/home/orangepi"
+ExecStart=/bin/bash -c 'source /opt/ros/noetic/setup.bash && source /home/orangepi/catkin_ws/devel/setup.bash && roslaunch mak4_sim real_flight.launch'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable mak4-ros.service
+
+--- A.12 验证清单 ---
+
+□ roscore 能正常启动
+□ roslaunch mavros px4.launch fcu_url:=/dev/ttyUSB0:921600 → connected: True
+□ rostopic echo /mavros/state → 看到 connected: True, armed: False
+□ roslaunch livox_ros_driver2 ... → 看到点云数据
+□ catkin_make 编译通过 (mak4_sim, mak4_sim_cpp)
+□ Python脚本有执行权限: chmod +x ~/catkin_ws/src/mak4_sim/scripts/*.py
+
+================================================================================
+关键参数对比 (仿真 vs 真实)
+================================================================================
+
+  参数              仿真值      真实建议值     说明
+  ──────────────────────────────────────────────────────
+  flight_speed      6.9 m/s     1.0~2.0 m/s   真实中慢很多更安全
+  linear_speed      0.5 m/s     0.3 m/s       键盘遥控速度
+  vertical_speed    0.3 m/s     0.2 m/s       升降速度
+  safety_margin     0.3~0.4m    0.5~0.8m      安全距离要大
+  takeoff_height    1.5m        1.0m          先低后高
+  EKF2_RNG_A_HMAX   8.0m        8.0m          不变
+  EKF2_RNG_NOISE    0.05m       0.05m         实测调整
+
+================================================================================
+故障排除
+================================================================================
+
+Q: MAVROS连不上飞控
+A: 检查串口设备权限: sudo chmod 666 /dev/ttyUSB0
+   检查波特率是否匹配 (QGC中 MAV_1_RATE)
+   检查数据线是否是数据线 (非充电线)
+
+Q: 起飞后疯狂漂移
+A: 光流传感器安装方向可能反了
+   地面纹理不足 (铺报纸/地毯)
+   光照不足 (补光)
+
+Q: 高度不稳定
+A: 测距仪安装不正 (必须垂直朝下)
+   地面不平坦或有障碍物干扰
+   检查 EKF2_HGT_REF 是否设为 2 (测距仪)
+
+Q: OFFBOARD模式飞控拒绝
+A: RC遥控器需要有 OFFBOARD 通道开关
+   先手飞起来, 再切 OFFBOARD
+   setpoint 必须先发送 2 秒以上才能切 OFFBOARD
+
+Q: Fast-LIO2 建图漂移
+A: IMU校准不良 → 重新校准
+   雷达外参不准 → 测量并修改 extrinsic_T
+   运动太快 → 放慢速度
+
+================================================================================
+安全红线 (绝对不要做)
+================================================================================
+✗ 不要在没有 RC 遥控器的情况下自主飞行
+✗ 不要在人群附近飞行
+✗ 不要在电池低于 30% 时继续飞行
+✗ 不要在超出测距仪量程 (8m+) 的高度飞行
+✗ 不要一开始就用仿真中的高速度 (6.9m/s)
+✗ 不要在没有手动飞行验证前直接自主飞行

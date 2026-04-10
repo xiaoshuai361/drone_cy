@@ -1,0 +1,195 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+  - Class: rviz/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz/Grid
+      Name: Grid
+      Enabled: true
+      Line Style:
+        Line Width: 0.03
+        Value: Lines
+      Normal Cell Count: 0
+      Plane: XY
+      Plane Cell Count: 50
+      Reference Frame: <Fixed Frame>
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Enabled: true
+      Name: LiDAR_Registered
+      Size (Pixels): 2
+      Size (m): 0.02
+      Style: Points
+      Topic: /cloud_registered
+      Unreliable: false
+      Use Fixed Frame: true
+      Value: true
+
+    - Alpha: 0.7
+      Class: rviz/PointCloud2
+      Color: 0; 255; 0
+      Color Transformer: FlatColor
+      Enabled: true
+      Name: LiDAR_Body
+      Size (Pixels): 2
+      Size (m): 0.02
+      Style: Points
+      Topic: /cloud_registered_body
+      Unreliable: false
+      Use Fixed Frame: true
+      Value: true
+
+    - Class: octomap_rviz_plugin/OccupancyGrid
+      Enabled: true
+      Name: OctoMap
+      Octomap Topic: /octomap_binary
+      Queue Size: 5
+      Max Height Display: 10
+      Min Height Display: -1
+      Voxel Coloring: Z-Axis
+      Voxel Rendering: Occupied Voxels
+      Tree Depth: 16
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/Path
+      Color: 255; 165; 0
+      Enabled: false
+      Name: Drone_Trajectory
+      Topic: /path
+      Value: true
+
+    - Class: rviz/TF
+      Enabled: true
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: false
+      Value: true
+      Frames:
+        All Enabled: false
+        body:
+          Value: true
+        camera_init:
+          Value: true
+        map:
+          Value: true
+        camera_link:
+          Value: true
+        lidar_link:
+          Value: true
+
+    - Class: rviz/Image
+      Enabled: true
+      Image Topic: /camera/rgb/image_raw
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: RGB_Camera
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+      Unreliable: false
+      Value: true
+
+    - Class: rviz/Image
+      Enabled: true
+      Image Topic: /camera/depth/image_raw
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Depth_Camera
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+      Unreliable: false
+      Value: true
+
+    - Alpha: 0.5
+      Class: rviz/PointCloud2
+      Color: 255; 200; 0
+      Color Transformer: FlatColor
+      Enabled: false
+      Name: Camera_PointCloud
+      Size (Pixels): 2
+      Size (m): 0.02
+      Style: Points
+      Topic: /camera/depth/points
+      Unreliable: false
+      Use Fixed Frame: true
+      Value: true
+
+    - Alpha: 1
+      Class: rviz/Path
+      Color: 0; 255; 0
+      Enabled: true
+      Head Diameter: 0.3
+      Head Length: 0.2
+      Length: 0.3
+      Line Style: Lines
+      Line Width: 0.05
+      Name: Navigation_Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Shaft Diameter: 0.1
+      Shaft Length: 0.1
+      Topic: /planned_path
+      Value: true
+
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: camera_init
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/MoveCamera
+    - Class: rviz/Interact
+      Hide Inactive Objects: true
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/PublishPoint
+      Single click: true
+      Topic: /clicked_point
+    - Class: rviz/Measure
+  Value: true
+  Views:
+    Current:
+      Class: rviz/ThirdPersonFollower
+      Distance: 20
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Focal Shape Fixed Size: true
+      Focal Shape Size: 0.05
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 0.6
+      Target Frame: body
+      Value: ThirdPersonFollower (rviz)
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 900
+  Width: 1600
+  X: 0
+  Y: 0
+  RGB_Camera:
+    collapsed: false
+  Depth_Camera:
+    collapsed: false
+  Views:
+    collapsed: true

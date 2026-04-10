@@ -1,0 +1,19 @@
+material DirtGround
+{
+  technique
+  {
+    pass
+    {
+      ambient 0.5 0.4 0.3 1.0
+      diffuse 0.6 0.45 0.3 1.0
+      specular 0.1 0.1 0.1 1.0 5.0
+
+      texture_unit
+      {
+        texture dirt_ground.png
+        scale 0.15 0.15
+        filtering trilinear
+      }
+    }
+  }
+}

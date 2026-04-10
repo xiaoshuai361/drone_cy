@@ -1,0 +1,29 @@
+# ROS 编译产物
+build/
+devel/
+install/
+logs/
+.catkin_workspace
+.catkin_tools/
+
+# 大型地图文件 (建图时生成, 不上传)
+*.pcd
+*.bt
+*.pgm
+*.bag
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,125 @@
+<?xml version="1.0" ?>
+<!--
+  MAK4 森林仿真世界 (第十一次更新)
+  用于 3D LiDAR 建图 + 路径规划测试
+  区域: 约 60m x 60m 的中等密度森林
+  ★ 50棵树 (28橡树+22松树), 间距4-7m
+  ★ 树冠60%透明, 俯视可看到无人机
+  ★ 中央4m空地作为起飞区
+-->
+<sdf version="1.6">
+  <world name="mak4_forest">
+
+    <!-- ===== 光照 ===== -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- ===== 地面 ===== -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- ===== 物理引擎（PX4 SITL 标准配置）===== -->
+    <physics name='default_physics' default='0' type='ode'>
+      <gravity>0 0 -9.8066</gravity>
+      <ode>
+        <solver>
+          <type>quick</type>
+          <iters>10</iters>
+          <sor>1.3</sor>
+          <use_dynamic_moi_rescaling>0</use_dynamic_moi_rescaling>
+        </solver>
+        <constraints>
+          <cfm>0</cfm>
+          <erp>0.2</erp>
+          <contact_max_correcting_vel>100</contact_max_correcting_vel>
+          <contact_surface_layer>0.001</contact_surface_layer>
+        </constraints>
+      </ode>
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+      <magnetic_field>6.0e-06 2.3e-05 -4.2e-05</magnetic_field>
+    </physics>
+
+    <scene>
+      <ambient>0.4 0.4 0.4 1</ambient>
+      <background>0.7 0.85 1.0 1</background>
+      <shadows>true</shadows>
+    </scene>
+
+    <!-- ========= 橡树 28棵 (间距4-7m, 中央4m空地) ========= -->
+    <include><name>oak_1</name><uri>model://oak_tree_local</uri><pose>-22 -25 0 0 0 0.3</pose></include>
+    <include><name>oak_2</name><uri>model://oak_tree_local</uri><pose>-14 -23 0 0 0 1.2</pose></include>
+    <include><name>oak_3</name><uri>model://oak_tree_local</uri><pose>-6 -24 0 0 0 2.1</pose></include>
+    <include><name>oak_4</name><uri>model://oak_tree_local</uri><pose>3 -22 0 0 0 0.8</pose></include>
+    <include><name>oak_5</name><uri>model://oak_tree_local</uri><pose>10 -25 0 0 0 1.9</pose></include>
+    <include><name>oak_6</name><uri>model://oak_tree_local</uri><pose>18 -22 0 0 0 0.5</pose></include>
+    <include><name>oak_7</name><uri>model://oak_tree_local</uri><pose>25 -24 0 0 0 2.4</pose></include>
+    <include><name>oak_8</name><uri>model://oak_tree_local</uri><pose>-25 -14 0 0 0 1.7</pose></include>
+    <include><name>oak_9</name><uri>model://oak_tree_local</uri><pose>-16 -12 0 0 0 0.1</pose></include>
+    <include><name>oak_10</name><uri>model://oak_tree_local</uri><pose>-8 -14 0 0 0 3.0</pose></include>
+    <include><name>oak_11</name><uri>model://oak_tree_local</uri><pose>6 -13 0 0 0 0.9</pose></include>
+    <include><name>oak_12</name><uri>model://oak_tree_local</uri><pose>14 -15 0 0 0 2.7</pose></include>
+    <include><name>oak_13</name><uri>model://oak_tree_local</uri><pose>22 -12 0 0 0 1.5</pose></include>
+    <include><name>oak_14</name><uri>model://oak_tree_local</uri><pose>-24 -4 0 0 0 0.6</pose></include>
+    <include><name>oak_15</name><uri>model://oak_tree_local</uri><pose>-15 -5 0 0 0 1.1</pose></include>
+    <include><name>oak_16</name><uri>model://oak_tree_local</uri><pose>-6 -6 0 0 0 0.4</pose></include>
+    <include><name>oak_17</name><uri>model://oak_tree_local</uri><pose>7 -5 0 0 0 1.8</pose></include>
+    <include><name>oak_18</name><uri>model://oak_tree_local</uri><pose>16 -4 0 0 0 2.9</pose></include>
+    <include><name>oak_19</name><uri>model://oak_tree_local</uri><pose>24 -5 0 0 0 0.7</pose></include>
+    <include><name>oak_20</name><uri>model://oak_tree_local</uri><pose>-22 6 0 0 0 2.0</pose></include>
+    <include><name>oak_21</name><uri>model://oak_tree_local</uri><pose>-12 7 0 0 0 1.3</pose></include>
+    <include><name>oak_22</name><uri>model://oak_tree_local</uri><pose>10 5 0 0 0 0.2</pose></include>
+    <include><name>oak_23</name><uri>model://oak_tree_local</uri><pose>20 7 0 0 0 2.5</pose></include>
+    <include><name>oak_24</name><uri>model://oak_tree_local</uri><pose>-20 16 0 0 0 1.6</pose></include>
+    <include><name>oak_25</name><uri>model://oak_tree_local</uri><pose>-10 18 0 0 0 0.8</pose></include>
+    <include><name>oak_26</name><uri>model://oak_tree_local</uri><pose>6 16 0 0 0 2.2</pose></include>
+    <include><name>oak_27</name><uri>model://oak_tree_local</uri><pose>16 17 0 0 0 1.4</pose></include>
+    <include><name>oak_28</name><uri>model://oak_tree_local</uri><pose>24 15 0 0 0 0.3</pose></include>
+
+    <!-- ========= 松树 22棵 (与橡树交错分布) ========= -->
+    <include><name>pine_1</name><uri>model://pine_tree_local</uri><pose>-18 -20 0 0 0 0.8</pose></include>
+    <include><name>pine_2</name><uri>model://pine_tree_local</uri><pose>-10 -19 0 0 0 1.5</pose></include>
+    <include><name>pine_3</name><uri>model://pine_tree_local</uri><pose>-1 -18 0 0 0 2.3</pose></include>
+    <include><name>pine_4</name><uri>model://pine_tree_local</uri><pose>7 -20 0 0 0 0.4</pose></include>
+    <include><name>pine_5</name><uri>model://pine_tree_local</uri><pose>15 -18 0 0 0 1.9</pose></include>
+    <include><name>pine_6</name><uri>model://pine_tree_local</uri><pose>22 -18 0 0 0 2.8</pose></include>
+    <include><name>pine_7</name><uri>model://pine_tree_local</uri><pose>-21 -8 0 0 0 0.6</pose></include>
+    <include><name>pine_8</name><uri>model://pine_tree_local</uri><pose>-12 -9 0 0 0 1.2</pose></include>
+    <include><name>pine_9</name><uri>model://pine_tree_local</uri><pose>-2 -10 0 0 0 2.1</pose></include>
+    <include><name>pine_10</name><uri>model://pine_tree_local</uri><pose>10 -9 0 0 0 0.3</pose></include>
+    <include><name>pine_11</name><uri>model://pine_tree_local</uri><pose>19 -8 0 0 0 1.7</pose></include>
+    <include><name>pine_12</name><uri>model://pine_tree_local</uri><pose>-19 2 0 0 0 2.5</pose></include>
+    <include><name>pine_13</name><uri>model://pine_tree_local</uri><pose>-8 4 0 0 0 0.9</pose></include>
+    <include><name>pine_14</name><uri>model://pine_tree_local</uri><pose>5 6 0 0 0 1.6</pose></include>
+    <include><name>pine_15</name><uri>model://pine_tree_local</uri><pose>15 4 0 0 0 2.7</pose></include>
+    <include><name>pine_16</name><uri>model://pine_tree_local</uri><pose>-16 12 0 0 0 0.5</pose></include>
+    <include><name>pine_17</name><uri>model://pine_tree_local</uri><pose>-5 14 0 0 0 1.8</pose></include>
+    <include><name>pine_18</name><uri>model://pine_tree_local</uri><pose>12 12 0 0 0 2.4</pose></include>
+    <include><name>pine_19</name><uri>model://pine_tree_local</uri><pose>22 13 0 0 0 0.7</pose></include>
+    <include><name>pine_20</name><uri>model://pine_tree_local</uri><pose>-14 22 0 0 0 1.1</pose></include>
+    <include><name>pine_21</name><uri>model://pine_tree_local</uri><pose>2 23 0 0 0 2.6</pose></include>
+    <include><name>pine_22</name><uri>model://pine_tree_local</uri><pose>18 22 0 0 0 0.4</pose></include>
+
+    <!-- ========= 岩石 ========= -->
+    <model name="rock_1"><static>true</static><pose>-8 -8 0.4 0 0 0.5</pose><link name="link"><collision name="c"><geometry><cylinder><radius>0.6</radius><length>0.8</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.6</radius><length>0.8</length></cylinder></geometry><material><ambient>0.4 0.4 0.35 1</ambient><diffuse>0.5 0.5 0.45 1</diffuse></material></visual></link></model>
+    <model name="rock_2"><static>true</static><pose>10 12 0.3 0.1 0 1.2</pose><link name="link"><collision name="c"><geometry><cylinder><radius>0.5</radius><length>0.6</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.5</radius><length>0.6</length></cylinder></geometry><material><ambient>0.45 0.42 0.38 1</ambient><diffuse>0.55 0.52 0.48 1</diffuse></material></visual></link></model>
+    <model name="rock_3"><static>true</static><pose>-15 10 0.35 0.05 0 2.0</pose><link name="link"><collision name="c"><geometry><cylinder><radius>0.7</radius><length>0.7</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.7</radius><length>0.7</length></cylinder></geometry><material><ambient>0.42 0.40 0.36 1</ambient><diffuse>0.52 0.50 0.46 1</diffuse></material></visual></link></model>
+
+    <!-- ========= 灌木 ========= -->
+    <model name="bush_1"><static>true</static><pose>-6 6 0.3 0 0 0.4</pose><link name="link"><collision name="c"><geometry><box><size>1.0 1.0 0.6</size></box></geometry></collision><visual name="v"><geometry><box><size>1.0 1.0 0.6</size></box></geometry><material><ambient>0.1 0.35 0.08 1</ambient><diffuse>0.15 0.45 0.12 1</diffuse></material></visual></link></model>
+    <model name="bush_2"><static>true</static><pose>12 -8 0.25 0 0 1.1</pose><link name="link"><collision name="c"><geometry><box><size>0.8 0.8 0.5</size></box></geometry></collision><visual name="v"><geometry><box><size>0.8 0.8 0.5</size></box></geometry><material><ambient>0.12 0.32 0.1 1</ambient><diffuse>0.18 0.42 0.15 1</diffuse></material></visual></link></model>
+    <model name="bush_3"><static>true</static><pose>-14 -15 0.3 0 0 0.7</pose><link name="link"><collision name="c"><geometry><box><size>1.2 0.8 0.6</size></box></geometry></collision><visual name="v"><geometry><box><size>1.2 0.8 0.6</size></box></geometry><material><ambient>0.1 0.38 0.08 1</ambient><diffuse>0.15 0.48 0.12 1</diffuse></material></visual></link></model>
+    <model name="bush_4"><static>true</static><pose>18 20 0.25 0 0 2.3</pose><link name="link"><collision name="c"><geometry><box><size>0.9 0.9 0.5</size></box></geometry></collision><visual name="v"><geometry><box><size>0.9 0.9 0.5</size></box></geometry><material><ambient>0.11 0.34 0.09 1</ambient><diffuse>0.16 0.44 0.13 1</diffuse></material></visual></link></model>
+    <model name="bush_5"><static>true</static><pose>-3 -17 0.3 0 0 1.5</pose><link name="link"><collision name="c"><geometry><box><size>1.0 0.8 0.5</size></box></geometry></collision><visual name="v"><geometry><box><size>1.0 0.8 0.5</size></box></geometry><material><ambient>0.1 0.36 0.09 1</ambient><diffuse>0.15 0.46 0.13 1</diffuse></material></visual></link></model>
+    <model name="bush_6"><static>true</static><pose>20 -4 0.25 0 0 0.9</pose><link name="link"><collision name="c"><geometry><box><size>0.9 1.0 0.55</size></box></geometry></collision><visual name="v"><geometry><box><size>0.9 1.0 0.55</size></box></geometry><material><ambient>0.1 0.33 0.08 1</ambient><diffuse>0.15 0.43 0.12 1</diffuse></material></visual></link></model>
+
+    <!-- ========= 倒木 ========= -->
+    <model name="fallen_log_1"><static>true</static><pose>-3 -12 0.2 0 1.5 0.3</pose><link name="link"><collision name="c"><geometry><cylinder><radius>0.15</radius><length>4.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.15</radius><length>4.0</length></cylinder></geometry><material><ambient>0.3 0.2 0.08 1</ambient><diffuse>0.4 0.28 0.12 1</diffuse></material></visual></link></model>
+    <model name="fallen_log_2"><static>true</static><pose>14 5 0.18 0 1.5 1.8</pose><link name="link"><collision name="c"><geometry><cylinder><radius>0.12</radius><length>3.5</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.12</radius><length>3.5</length></cylinder></geometry><material><ambient>0.28 0.18 0.07 1</ambient><diffuse>0.38 0.25 0.10 1</diffuse></material></visual></link></model>
+    <model name="fallen_log_3"><static>true</static><pose>-18 9 0.16 0 1.5 2.5</pose><link name="link"><collision name="c"><geometry><cylinder><radius>0.13</radius><length>3.0</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>0.13</radius><length>3.0</length></cylinder></geometry><material><ambient>0.25 0.16 0.06 1</ambient><diffuse>0.35 0.22 0.09 1</diffuse></material></visual></link></model>
+
+  </world>
+</sdf>
