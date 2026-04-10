@@ -45,11 +45,11 @@ mak4_drone_sim/
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/<你的用户名>/mak4_drone_sim.git
+git clone https://github.com/xiaoshuai361/drone_cy.git
 
 # 2. 复制功能包到 catkin 工作空间
-cp -r mak4_drone_sim/python_ws ~/catkin_ws/src/mak4_sim
-cp -r mak4_drone_sim/cpp_ws ~/catkin_ws/src/mak4_sim_cpp
+cp -r drone_cy/python_ws ~/catkin_ws/src/mak4_sim
+cp -r drone_cy/cpp_ws ~/catkin_ws/src/mak4_sim_cpp
 
 # 3. 编译
 cd ~/catkin_ws && catkin_make
