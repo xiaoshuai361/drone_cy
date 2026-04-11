@@ -1,0 +1,363 @@
+================================================================================
+  MAK4 无人机仿真 —— 香橙派 5 Pro 完整环境配置说明
+  目标系统: Orange Pi 5 Pro (RK3588, ARM64, Ubuntu 20.04 + ROS Noetic)
+  说明用途: 提供给 AI 助手, 使其能在香橙派上精确复现当前全部代码和功能
+================================================================================
+
+================================================================================
+PART 0: 项目概述
+================================================================================
+
+本项目是一套基于 PX4 SITL + ROS Noetic + Gazebo 11 的四旋翼无人机仿真系统,
+功能包括:
+  - PX4 飞控软件在环仿真 (SITL, iris 四旋翼模型)
+  - Gazebo 11 温室/森林场景仿真
+  - FAST-LIO2 激光 SLAM 建图 (Livox Mid360 仿真)
+  - OctoMap 三维地图 + 2D 栅格地图
+  - MAVROS 飞控通信
+  - 多种路径规划: A* 全局覆盖、RRT* 3D 避障、弓字形覆盖
+  - 动态障碍物避障 + 自动重规划
+  - C++ 和 Python 双版本实现
+
+所有代码均已上传 GitHub, 香橙派上全程通过 git clone 获取, 无需 U 盘.
+
+================================================================================
+PART 1: 代码仓库结构
+================================================================================
+
+GitHub 仓库一览:
+
+  1. 用户自定义代码 (两个ROS功能包合并存放):
+     仓库地址: https://github.com/xiaoshuai361/drone_cy.git
+     本地目录: ~/mak4_drone_sim/
+     包含:
+       python_ws/   →  对应 ~/catkin_ws/src/mak4_sim        (Python 版本节点)
+       cpp_ws/      →  对应 ~/catkin_ws_cpp/src/mak4_sim_cpp (C++ 版本节点)
+
+  2. FAST-LIO2 SLAM:
+     仓库地址: https://github.com/hku-mars/FAST_LIO.git
+     克隆到:  ~/catkin_ws/src/FAST_LIO/
+              ~/catkin_ws_cpp/src/FAST_LIO/   (两个工作空间各一份)
+
+  3. Livox ROS 驱动:
+     仓库地址: https://github.com/Livox-SDK/livox_ros_driver.git
+     克隆到:  ~/catkin_ws/src/livox_ros_driver/
+              ~/catkin_ws_cpp/src/livox_ros_driver/
+
+  4. PX4 飞控固件:
+     仓库地址: https://github.com/PX4/PX4-Autopilot.git
+     版本标签: v1.14.3
+     克隆到:  ~/PX4-Autopilot/
+
+================================================================================
+PART 2: 完整目录结构
+================================================================================
+
+~/ (家目录)
+├── mak4_drone_sim/                  # GitHub: xiaoshuai361/drone_cy
+│   ├── python_ws/                   # Python 功能包源码 (=catkin_ws/src/mak4_sim)
+│   │   ├── CMakeLists.txt
+│   │   ├── package.xml
+│   │   ├── config/                  # Fast-LIO 配置 (fastlio_sim_mid360.yaml 等)
+│   │   ├── docs/                    # HTML 学习文档
+│   │   ├── include/
+│   │   ├── launch/                  # ROS launch 文件
+│   │   │   ├── mak4_sitl.launch     # 主仿真启动 (PX4+Gazebo+MAVROS)
+│   │   │   ├── mak4_greenhouse.launch # 温室场景启动
+│   │   │   ├── mak4_forest.launch   # 森林场景启动
+│   │   │   ├── slam_mapping.launch  # SLAM 建图启动
+│   │   │   ├── navigation.launch    # OctoMap 导航
+│   │   │   └── navigation_2d.launch # 2D 栅格导航
+│   │   ├── maps/                    # 地图目录 (空,地图运行时生成存到~/catkin_ws/maps/)
+│   │   ├── models/                  # 自定义 Gazebo 模型
+│   │   │   ├── iris_rgbd_lidar/     # 无人机模型 (RGB-D + Mid360 LiDAR)
+│   │   │   ├── greenhouse/          # 20m×8m×4m 拱形温室
+│   │   │   ├── cucumber_row/        # 黄瓜行作物模型
+│   │   │   ├── oak_tree_local/      # 橡树 (本地, 无需网络)
+│   │   │   └── pine_tree_local/     # 松树 (本地, 无需网络)
+│   │   ├── scripts/                 # Python 节点 (13个)
+│   │   │   ├── keyboard_teleop.py
+│   │   │   ├── takeoff_hover_test.py
+│   │   │   ├── slam_to_mavros.py    # SLAM 位姿→MAVROS
+│   │   │   ├── configure_ekf2.py
+│   │   │   ├── nan_filter.py
+│   │   │   ├── save_map.py / load_map.py
+│   │   │   ├── grid_map_planner.py  # A* 全局覆盖 + 动态避障
+│   │   │   ├── patrol_planner.py    # OctoMap 巡逻规划
+│   │   │   ├── boustrophedon_planner.py # 弓字形覆盖
+│   │   │   ├── rrt_star_planner.py  # RRT* 3D 避障
+│   │   │   ├── interactive_planner.py   # 交互式航点规划
+│   │   │   └── pcd_to_2d_map.py    # PCD→2D栅格地图转换
+│   │   ├── src/
+│   │   └── worlds/                  # Gazebo 世界文件
+│   └── cpp_ws/                      # C++ 功能包源码 (=catkin_ws_cpp/src/mak4_sim_cpp)
+│       ├── CMakeLists.txt
+│       ├── package.xml
+│       ├── config/
+│       ├── include/
+│       ├── launch/
+│       ├── maps/
+│       ├── models/                  # 符号链接 → python_ws/models
+│       ├── src/                     # C++ 节点 (13个, 对应 Python 版本)
+│       │   ├── configure_ekf2_node.cpp
+│       │   ├── slam_to_mavros_node.cpp
+│       │   ├── nan_filter_node.cpp
+│       │   ├── keyboard_teleop_node.cpp
+│       │   ├── takeoff_hover_test_node.cpp
+│       │   ├── patrol_planner_node.cpp
+│       │   ├── grid_map_planner_node.cpp
+│       │   ├── save_map_node.cpp / load_map_node.cpp
+│       │   ├── boustrophedon_planner_node.cpp
+│       │   ├── rrt_star_planner_node.cpp
+│       │   ├── interactive_planner_node.cpp
+│       │   └── pcd_to_2d_map_node.cpp
+│       └── worlds/                  # 符号链接 → python_ws/worlds
+│
+├── catkin_ws/                       # Python 版 ROS 工作空间
+│   ├── src/
+│   │   ├── CMakeLists.txt           # catkin 自动生成的符号链接
+│   │   ├── mak4_sim/                # = mak4_drone_sim/python_ws 的拷贝
+│   │   ├── FAST_LIO/                # GitHub: hku-mars/FAST_LIO
+│   │   └── livox_ros_driver/        # GitHub: Livox-SDK/livox_ros_driver
+│   ├── maps/                        # SLAM 生成的地图文件 (运行时产生)
+│   │   ├── greenhouse_2d.pgm        # 2D 栅格地图图片 (建图后生成)
+│   │   ├── greenhouse_2d.yaml       # 2D 地图配置 (建图后生成)
+│   │   ├── greenhouse_map.bt        # OctoMap 八叉树地图 (建图后生成)
+│   │   └── greenhouse_map.pcd       # 点云地图 (建图后生成)
+│   ├── build/                       # 编译产物 (catkin_make 生成)
+│   └── devel/                       # 编译产物 (catkin_make 生成)
+│
+├── catkin_ws_cpp/                   # C++ 版 ROS 工作空间
+│   ├── src/
+│   │   ├── CMakeLists.txt
+│   │   ├── mak4_sim_cpp/            # = mak4_drone_sim/cpp_ws 的拷贝
+│   │   ├── FAST_LIO/                # GitHub: hku-mars/FAST_LIO (独立克隆)
+│   │   └── livox_ros_driver/        # GitHub: Livox-SDK/livox_ros_driver
+│   ├── build/
+│   └── devel/
+│
+└── PX4-Autopilot/                   # GitHub: PX4/PX4-Autopilot (tag: v1.14.3)
+    ├── build/px4_sitl_default/      # 编译产物 (make 生成)
+    └── Tools/simulation/gazebo-classic/  # Gazebo 仿真插件
+
+================================================================================
+PART 3: ~/.bashrc 配置 (完整内容)
+================================================================================
+
+在 ~/.bashrc 末尾应添加以下内容 (orangepi_setup.sh 第12步自动写入):
+
+  source /opt/ros/noetic/setup.bash
+  source ~/catkin_ws/devel/setup.bash
+  export PATH=$HOME/.local/bin:$PATH
+  export PX4_HOME=$HOME/PX4-Autopilot
+
+  setup_px4_env() {
+    source $PX4_HOME/Tools/simulation/gazebo-classic/setup_gazebo.bash \
+      $PX4_HOME $PX4_HOME/build/px4_sitl_default 2>/dev/null
+    export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$PX4_HOME:$PX4_HOME/Tools/simulation/gazebo-classic/sitl_gazebo-classic
+  }
+
+  setup_px4_env
+
+  alias use_cpp='source ~/catkin_ws_cpp/devel/setup.bash && setup_px4_env && echo "[OK] C++工作空间 + PX4 已加载"'
+  alias use_py='source ~/catkin_ws/devel/setup.bash && setup_px4_env && echo "[OK] Python工作空间 + PX4 已加载"'
+
+使用说明:
+  - 默认加载 Python 工作空间
+  - 切换 C++ 工作空间: 执行 use_cpp
+  - 切换回 Python 工作空间: 执行 use_py
+
+================================================================================
+PART 4: 安装脚本执行流程 (orangepi_setup.sh)
+================================================================================
+
+前提:
+  ✅ 已通过 fishros.com 安装 ROS Noetic (已换国内源)
+  ✅ 网络可用 (需访问 GitHub 和 apt 源)
+  ✅ 已将 orangepi_setup.sh 复制到香橙派 (可从 GitHub drone_cy 仓库获取)
+
+获取脚本:
+  # 方式1: 从 GitHub 下载
+  wget https://raw.githubusercontent.com/xiaoshuai361/drone_cy/main/orangepi_setup.sh
+  # 方式2: 先 clone 再复制
+  git clone https://github.com/xiaoshuai361/drone_cy.git
+  cp drone_cy/orangepi_setup.sh ~/
+
+执行:
+  chmod +x ~/orangepi_setup.sh
+  # 推荐分段执行, 每步确认 "==== 第X步完成 ====" 后再继续:
+
+步骤概览:
+  第1步  (~2 min)  系统基础工具 (build-essential/cmake/git等)
+  第2步  (~5 min)  Gazebo 11 + ROS Gazebo 插件
+  第3步  (~5 min)  MAVROS + GeographicLib 数据集 (需外网, ~60MB)
+  第4步  (~5 min)  PCL / OctoMap / Velodyne / TF2 等 ROS 包
+  第5步  (~2 min)  Python 依赖 (empy/jinja2/pymavlink等)
+  第6步  (~2 min)  PX4 编译依赖 (gstreamer/protobuf等)
+  第7步  (~2 min)  rosdep / catkin-tools
+  第8步  (~20 min) 从 GitHub 克隆所有代码 (drone_cy/FAST_LIO/Livox/PX4)
+  第9步  (~30 min) 编译 PX4 SITL (ARM64 原生编译, 较慢)
+  第10步 (~15 min) 编译 catkin_ws (Python 工作空间)
+  第11步 (~10 min) 编译 catkin_ws_cpp (C++ 工作空间)
+  第12步 (~1 sec)  写入 ~/.bashrc
+
+================================================================================
+PART 5: 系统软件包清单 (apt)
+================================================================================
+
+ROS Noetic (fishros 已装):
+  ros-noetic-desktop 或 ros-noetic-desktop-full
+
+Gazebo:
+  gazebo11  libgazebo11-dev
+  ros-noetic-gazebo-ros-pkgs  ros-noetic-gazebo-ros  ros-noetic-gazebo-plugins
+  ros-noetic-gazebo-ros-control  ros-noetic-gazebo-dev  ros-noetic-gazebo-msgs
+  ros-noetic-xacro  ros-noetic-robot-state-publisher  ros-noetic-joint-state-publisher
+  ros-noetic-urdf  ros-noetic-rviz
+
+MAVROS:
+  ros-noetic-mavros  ros-noetic-mavros-extras  ros-noetic-mavros-msgs
+  ros-noetic-mavlink  ros-noetic-libmavconn  ros-noetic-geographic-msgs
+  geographiclib-tools
+
+PCL / 点云 / OctoMap:
+  ros-noetic-pcl-ros  ros-noetic-pcl-conversions  ros-noetic-pcl-msgs
+  ros-noetic-perception-pcl  libpcl-dev
+  ros-noetic-octomap  ros-noetic-octomap-msgs  ros-noetic-octomap-ros
+  ros-noetic-octomap-server  ros-noetic-octomap-rviz-plugins  liboctomap-dev
+
+Velodyne LiDAR (仿真 Mid360 用 velodyne 格式):
+  ros-noetic-velodyne-description  ros-noetic-velodyne-driver
+  ros-noetic-velodyne-gazebo-plugins  ros-noetic-velodyne-laserscan
+  ros-noetic-velodyne-msgs  ros-noetic-velodyne-pointcloud
+  ros-noetic-pointcloud-to-laserscan
+
+TF / 传感器 / 消息:
+  ros-noetic-tf2-ros  ros-noetic-tf2-geometry-msgs  ros-noetic-tf2-sensor-msgs
+  ros-noetic-tf2-eigen  ros-noetic-cv-bridge  ros-noetic-image-transport
+  ros-noetic-sensor-msgs  ros-noetic-nav-msgs  ros-noetic-visualization-msgs
+
+编译依赖:
+  build-essential  cmake  ninja-build  git  wget  curl  vim  htop
+  libxml2-dev  libyaml-cpp-dev  libeigen3-dev  libopencv-dev  libpcl-dev
+  libprotobuf-dev  protobuf-compiler  libgstreamer1.0-dev  libsdl2-dev
+  ant  genromfs  xmlstarlet  libfuse2
+
+Python 工具:
+  python3-rosdep  python3-catkin-tools  python3-osrf-pycommon
+  python3-wstool  python3-rosinstall  python3-rosinstall-generator
+
+================================================================================
+PART 6: Python 包清单 (pip3)
+================================================================================
+
+  empy==3.3.4  (注意: 必须是 3.3.x, 不能是 4.x)
+  numpy  scipy  PyYAML  jinja2
+  pyserial  pymavlink  future
+  cerberus  coverage  argcomplete  packaging  toml
+  sympy  lxml  matplotlib  pandas  psutil  pyulog
+  kconfiglib  nunavut  pyros-genmsg
+
+================================================================================
+PART 7: ⚠️ 重要注意事项 (GPU Ray 问题)
+================================================================================
+
+问题描述:
+  仿真使用 GPU Ray 插件模拟 Mid360 LiDAR:
+    sensor type="gpu_ray"  +  libgazebo_ros_velodyne_gpu_laser.so
+
+  Orange Pi 5 Pro 的 Mali-G610 GPU 不支持 CUDA,
+  Gazebo gpu_ray 需要 OpenGL GPU 加速.
+
+解决方案 (推荐): 改用 CPU Ray 插件
+  修改文件:
+    ~/catkin_ws/src/mak4_sim/models/iris_rgbd_lidar/   (找到对应 SDF/URDF)
+  将:
+    type="gpu_ray"                           → type="ray"
+    libgazebo_ros_velodyne_gpu_laser.so      → libgazebo_ros_velodyne_laser.so
+  可选: 降低点数 (samples 360 → 180) 减轻 CPU 负担
+
+================================================================================
+PART 8: 地图文件说明
+================================================================================
+
+地图文件不在 GitHub 仓库中 (.gitignore 已排除 .pgm/.bt/.pcd).
+需在香橙派上运行仿真并通过 SLAM 建图生成:
+
+  # 启动建图:
+  roslaunch mak4_sim slam_mapping.launch
+
+  # 保存地图 (新开终端):
+  rosrun mak4_sim save_map.py
+  # 地图将保存到 ~/catkin_ws/maps/
+
+地图文件位置:
+  ~/catkin_ws/maps/greenhouse_2d.pgm       # 2D 栅格地图 (map_server 用)
+  ~/catkin_ws/maps/greenhouse_2d.yaml      # 地图配置文件
+  ~/catkin_ws/maps/greenhouse_map.bt       # OctoMap 八叉树
+  ~/catkin_ws/maps/greenhouse_map.pcd      # 点云地图
+
+launch 文件中的地图路径引用:
+  navigation.launch    → $(env HOME)/catkin_ws/maps/greenhouse_map.bt
+  navigation_2d.launch → $(env HOME)/catkin_ws/maps/greenhouse_2d.yaml
+
+================================================================================
+PART 9: GeographicLib 数据集离线安装 (如外网不可用)
+================================================================================
+
+  # 在有网络的机器上打包:
+  sudo tar -czf geographiclib_data.tar.gz /usr/share/GeographicLib/
+
+  # 香橙派上解压:
+  sudo tar -xzf geographiclib_data.tar.gz -C /
+
+================================================================================
+PART 10: 常见错误排查
+================================================================================
+
+1. catkin_make 内存不足 (OOM Killed):
+   → catkin_make -j1
+   → 增加 swap:
+       sudo fallocate -l 4G /swapfile && sudo chmod 600 /swapfile
+       sudo mkswap /swapfile && sudo swapon /swapfile
+       echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+2. PX4 编译报 "No module named 'jinja2'" 或 empy 相关错误:
+   → pip3 install --user jinja2 "empy==3.3.4" pyserial
+   → 重新运行 make
+
+3. Gazebo 无法启动 / 黑屏:
+   → 强制软件渲染: export LIBGL_ALWAYS_SOFTWARE=1
+   → 安装 Mesa: sudo apt install mesa-utils libgles2-mesa-dev
+
+4. FAST_LIO 编译报 Eigen 或 PCL 错误:
+   → sudo apt install libeigen3-dev libpcl-dev
+
+5. MAVROS 报 "url scheme not supported" (url_scheme):
+   → GeographicLib 数据集缺失, 见 PART 9
+
+6. roslaunch 找不到包:
+   → source ~/.bashrc
+   → 手动: source ~/catkin_ws/devel/setup.bash && setup_px4_env
+
+7. PX4 git submodule 超时/失败:
+   → 在有 GitHub 访问的机器上完整 clone PX4, 打包 .git 子模块后复制
+   → 或使用代理: git config --global https.proxy http://proxy:port
+
+================================================================================
+快速验证清单 (全部配置完成后逐项检查)
+================================================================================
+
+□ roscore 能正常启动
+□ rosversion -d  输出 "noetic"
+□ which gazebo   有路径输出
+□ python3 -c "import empy; print('ok')"  输出 ok
+□ ~/catkin_ws/devel/setup.bash  文件存在
+□ ~/catkin_ws_cpp/devel/setup.bash  文件存在
+□ ~/PX4-Autopilot/build/px4_sitl_default/bin/px4  文件存在
+□ use_py  别名执行无报错
+□ use_cpp 别名执行无报错
+□ roslaunch mak4_sim mak4_greenhouse.launch (启动仿真, 确认 Gazebo 打开)
+
+================================================================================
+
