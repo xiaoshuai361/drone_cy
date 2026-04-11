@@ -31,8 +31,9 @@ GitHub 仓库一览:
      仓库地址: https://github.com/xiaoshuai361/drone_cy.git
      本地目录: ~/mak4_drone_sim/
      包含:
-       python_ws/   →  对应 ~/catkin_ws/src/mak4_sim        (Python 版本节点)
-       cpp_ws/      →  对应 ~/catkin_ws_cpp/src/mak4_sim_cpp (C++ 版本节点)
+       mak4_sim/     →  复制到 ~/catkin_ws/src/mak4_sim        (Python 版本节点)
+       mak4_sim_cpp/ →  复制到 ~/catkin_ws_cpp/src/mak4_sim_cpp (C++ 版本节点)
+       docs/         →  项目文档 (指令清单/任务清单/真实启动)
 
   2. FAST-LIO2 SLAM:
      仓库地址: https://github.com/hku-mars/FAST_LIO.git
@@ -55,7 +56,7 @@ PART 2: 完整目录结构
 
 ~/ (家目录)
 ├── mak4_drone_sim/                  # GitHub: xiaoshuai361/drone_cy
-│   ├── python_ws/                   # Python 功能包源码 (=catkin_ws/src/mak4_sim)
+│   ├── mak4_sim/                    # Python 功能包源码 (→catkin_ws/src/mak4_sim)
 │   │   ├── CMakeLists.txt
 │   │   ├── package.xml
 │   │   ├── config/                  # Fast-LIO 配置 (fastlio_sim_mid360.yaml 等)
@@ -90,14 +91,14 @@ PART 2: 完整目录结构
 │   │   │   └── pcd_to_2d_map.py    # PCD→2D栅格地图转换
 │   │   ├── src/
 │   │   └── worlds/                  # Gazebo 世界文件
-│   └── cpp_ws/                      # C++ 功能包源码 (=catkin_ws_cpp/src/mak4_sim_cpp)
+│   └── mak4_sim_cpp/                 # C++ 功能包源码 (→catkin_ws_cpp/src/mak4_sim_cpp)
 │       ├── CMakeLists.txt
 │       ├── package.xml
 │       ├── config/
 │       ├── include/
 │       ├── launch/
 │       ├── maps/
-│       ├── models/                  # 符号链接 → python_ws/models
+│       ├── models/                  # 符号链接 → mak4_sim/models
 │       ├── src/                     # C++ 节点 (13个, 对应 Python 版本)
 │       │   ├── configure_ekf2_node.cpp
 │       │   ├── slam_to_mavros_node.cpp
@@ -111,12 +112,12 @@ PART 2: 完整目录结构
 │       │   ├── rrt_star_planner_node.cpp
 │       │   ├── interactive_planner_node.cpp
 │       │   └── pcd_to_2d_map_node.cpp
-│       └── worlds/                  # 符号链接 → python_ws/worlds
+│       └── worlds/                  # 符号链接 → mak4_sim/worlds
 │
 ├── catkin_ws/                       # Python 版 ROS 工作空间
 │   ├── src/
 │   │   ├── CMakeLists.txt           # catkin 自动生成的符号链接
-│   │   ├── mak4_sim/                # = mak4_drone_sim/python_ws 的拷贝
+│   │   ├── mak4_sim/                # = mak4_drone_sim/mak4_sim 的拷贝
 │   │   ├── FAST_LIO/                # GitHub: hku-mars/FAST_LIO
 │   │   └── livox_ros_driver/        # GitHub: Livox-SDK/livox_ros_driver
 │   ├── maps/                        # SLAM 生成的地图文件 (运行时产生)
@@ -130,7 +131,7 @@ PART 2: 完整目录结构
 ├── catkin_ws_cpp/                   # C++ 版 ROS 工作空间
 │   ├── src/
 │   │   ├── CMakeLists.txt
-│   │   ├── mak4_sim_cpp/            # = mak4_drone_sim/cpp_ws 的拷贝
+│   │   ├── mak4_sim_cpp/            # = mak4_drone_sim/mak4_sim_cpp 的拷贝
 │   │   ├── FAST_LIO/                # GitHub: hku-mars/FAST_LIO (独立克隆)
 │   │   └── livox_ros_driver/        # GitHub: Livox-SDK/livox_ros_driver
 │   ├── build/

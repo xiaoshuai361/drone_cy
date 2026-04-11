@@ -200,9 +200,14 @@ mkdir -p ~/catkin_ws_cpp/src
 # --- 8.1 克隆用户自定义代码 ---
 git clone https://github.com/xiaoshuai361/drone_cy.git ~/mak4_drone_sim
 
-# 将 python_ws 和 cpp_ws 复制到对应工作空间的 src 目录
-cp -r ~/mak4_drone_sim/python_ws ~/catkin_ws/src/mak4_sim
-cp -r ~/mak4_drone_sim/cpp_ws    ~/catkin_ws_cpp/src/mak4_sim_cpp
+# 将 mak4_sim 和 mak4_sim_cpp 复制到对应工作空间的 src 目录
+cp -r ~/mak4_drone_sim/mak4_sim     ~/catkin_ws/src/mak4_sim
+cp -r ~/mak4_drone_sim/mak4_sim_cpp ~/catkin_ws_cpp/src/mak4_sim_cpp
+
+# 复制文档到根目录 (方便查看)
+cp ~/mak4_drone_sim/docs/指令清单.txt ~/指令清单.txt
+cp ~/mak4_drone_sim/docs/任务清单.txt ~/任务清单.txt
+cp ~/mak4_drone_sim/docs/真实启动.txt ~/真实启动.txt
 
 # --- 8.2 克隆 FAST_LIO (两个工作空间各需要一份) ---
 cd ~/catkin_ws/src
