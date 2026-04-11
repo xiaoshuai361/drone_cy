@@ -98,7 +98,7 @@ PART 2: 完整目录结构
 │       ├── include/
 │       ├── launch/
 │       ├── maps/
-│       ├── models/                  # 符号链接 → mak4_sim/models
+│       ├── models/                  # 符号链接 → ~/catkin_ws/src/mak4_sim/models
 │       ├── src/                     # C++ 节点 (13个, 对应 Python 版本)
 │       │   ├── configure_ekf2_node.cpp
 │       │   ├── slam_to_mavros_node.cpp
@@ -112,7 +112,7 @@ PART 2: 完整目录结构
 │       │   ├── rrt_star_planner_node.cpp
 │       │   ├── interactive_planner_node.cpp
 │       │   └── pcd_to_2d_map_node.cpp
-│       └── worlds/                  # 符号链接 → mak4_sim/worlds
+│       └── worlds/                  # 符号链接 → ~/catkin_ws/src/mak4_sim/worlds
 │
 ├── catkin_ws/                       # Python 版 ROS 工作空间
 │   ├── src/
@@ -131,7 +131,7 @@ PART 2: 完整目录结构
 ├── catkin_ws_cpp/                   # C++ 版 ROS 工作空间
 │   ├── src/
 │   │   ├── CMakeLists.txt
-│   │   ├── mak4_sim_cpp/            # = mak4_drone_sim/mak4_sim_cpp 的拷贝
+│   │   ├── mak4_sim_cpp/            # 拷贝自 mak4_drone_sim; docs/models/worlds 为绝对符号链接→catkin_ws/src/mak4_sim/
 │   │   ├── FAST_LIO/                # GitHub: hku-mars/FAST_LIO (独立克隆)
 │   │   └── livox_ros_driver/        # GitHub: Livox-SDK/livox_ros_driver
 │   ├── build/
@@ -197,6 +197,7 @@ PART 4: 安装脚本执行流程 (orangepi_setup.sh)
   第6步  (~2 min)  PX4 编译依赖 (gstreamer/protobuf等)
   第7步  (~2 min)  rosdep / catkin-tools
   第8步  (~20 min) 从 GitHub 克隆所有代码 (drone_cy/FAST_LIO/Livox/PX4)
+                    ⚠️ 克隆后需修复 mak4_sim_cpp 中的符号链接 (见脚本)
   第9步  (~30 min) 编译 PX4 SITL (ARM64 原生编译, 较慢)
   第10步 (~15 min) 编译 catkin_ws (Python 工作空间)
   第11步 (~10 min) 编译 catkin_ws_cpp (C++ 工作空间)

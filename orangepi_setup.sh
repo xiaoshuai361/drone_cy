@@ -204,6 +204,14 @@ git clone https://github.com/xiaoshuai361/drone_cy.git ~/mak4_drone_sim
 cp -r ~/mak4_drone_sim/mak4_sim     ~/catkin_ws/src/mak4_sim
 cp -r ~/mak4_drone_sim/mak4_sim_cpp ~/catkin_ws_cpp/src/mak4_sim_cpp
 
+# 修复 mak4_sim_cpp 中的符号链接 (GitHub中是相对链接, 复制后会断裂)
+# 本地实际使用绝对路径指向 catkin_ws/src/mak4_sim/
+cd ~/catkin_ws_cpp/src/mak4_sim_cpp
+rm -f docs models worlds
+ln -s ~/catkin_ws/src/mak4_sim/docs   docs
+ln -s ~/catkin_ws/src/mak4_sim/models models
+ln -s ~/catkin_ws/src/mak4_sim/worlds worlds
+
 # 复制文档到根目录 (方便查看)
 cp ~/mak4_drone_sim/docs/指令清单.txt ~/指令清单.txt
 cp ~/mak4_drone_sim/docs/任务清单.txt ~/任务清单.txt
@@ -250,6 +258,7 @@ echo "==== 第9步完成 ===="
 # 第10步: 编译 catkin_ws (Python 工作空间: mak4_sim + FAST_LIO + livox_ros_driver)
 # ─────────────────────────────────────────────────────────────────────────────
 echo "==== 第10步: 编译 catkin_ws (Python 工作空间) ===="
+source /opt/ros/noetic/setup.bash
 cd ~/catkin_ws
 
 # ARM64 上并发数限制为 2~3, 避免 OOM
@@ -261,6 +270,7 @@ echo "==== 第10步完成 ===="
 # 第11步: 编译 catkin_ws_cpp (C++ 工作空间: mak4_sim_cpp)
 # ─────────────────────────────────────────────────────────────────────────────
 echo "==== 第11步: 编译 catkin_ws_cpp (C++ 工作空间) ===="
+source /opt/ros/noetic/setup.bash
 cd ~/catkin_ws_cpp
 
 catkin_make -j2 -DCMAKE_BUILD_TYPE=Release
