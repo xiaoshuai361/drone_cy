@@ -6,6 +6,13 @@ logs/
 .catkin_workspace
 .catkin_tools/
 
+# drone_ws 工作空间编译产物（明确路径）
+drone_ws/build/
+drone_ws/devel/
+drone_ws/install/
+drone_ws/logs/
+drone_ws/.catkin_workspace
+
 # 大型地图文件 (建图时生成, 不上传)
 *.pcd
 *.bt
