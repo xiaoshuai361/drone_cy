@@ -1,0 +1,18 @@
+<launch>
+    <!-- ttyACM0: Type-C USB直连飞控（推荐，波特率57600） -->
+    <!-- ttyUSB0: FTDI串口转USB（波特率921600） -->
+    <arg name="fcu_url" default="/dev/ttyACM0:57600"/>
+
+    <!-- 启动 MAVROS，连接真实飞控 -->
+    <!-- 此文件开机后只需启动一次，一直保持运行 -->
+    <node pkg="mavros" type="mavros_node" name="mavros" required="false"
+          clear_params="true" output="screen">
+        <param name="fcu_url"             value="$(arg fcu_url)"/>
+        <param name="gcs_url"             value=""/>
+        <param name="target_system_id"    value="1"/>
+        <param name="target_component_id" value="1"/>
+        <param name="fcu_protocol"        value="v2.0"/>
+        <rosparam command="load" file="$(find mavros)/launch/px4_pluginlists.yaml"/>
+        <rosparam command="load" file="$(find mavros)/launch/px4_config.yaml"/>
+    </node>
+</launch>

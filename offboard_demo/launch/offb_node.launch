@@ -1,0 +1,5 @@
+<launch>
+    <!-- 只启动 offboard 任务节点 -->
+    <!-- 使用前请确保 mavros_real.launch 已经在运行 -->
+    <node name="offb_node" pkg="offboard_demo" type="offb_node" output="screen"/>
+</launch>
